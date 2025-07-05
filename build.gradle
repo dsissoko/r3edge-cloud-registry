@@ -1,0 +1,161 @@
+plugins {
+    id 'java-library'
+    id 'org.springframework.boot' version '3.4.3'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'maven-publish'
+    id 'jacoco'
+}
+
+group = 'com.r3edge'
+version = '0.0.1'
+
+base {
+    archivesName = 'r3edge-cloud-registry'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+    withJavadocJar()
+    withSourcesJar()
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+ext {
+    set('springCloudVersion', "2024.0.0")
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+    gradlePluginPortal()
+}
+
+dependencies {
+    // Annotations et runtime
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    implementation 'org.springframework.boot:spring-boot-starter-json'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
+
+    // Spring minimum requis pour la lib
+    api 'org.springframework.boot:spring-boot-starter'
+    implementation "com.r3edge:r3edge-spring-flip:0.0.3"    
+
+    // Pour les tests
+    testAnnotationProcessor 'org.projectlombok:lombok'
+    // Pour activer @Slf4j dans les tests
+    testImplementation 'org.projectlombok:lombok'
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.mockito:mockito-junit-jupiter'
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy tasks.jacocoTestReport
+    jvmArgs '-Djava.net.preferIPv4Stack=true'
+}
+
+jacoco {
+    toolVersion = "0.8.7"
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+}
+
+springBoot {
+    buildInfo()
+}
+
+tasks.named("bootJar") {
+    enabled = false
+}
+
+tasks.named("jar") {
+    enabled = true
+    configure {
+        manifest {
+            attributes(
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version,
+                'Implementation-Vendor': 'r3edge.com',
+                'Built-By': System.getProperty('user.name'),
+                'Built-Date': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                'Build-Jdk': System.getProperty('java.version')
+            )
+        }
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = project.group
+            artifactId = base.archivesName.get()
+            version = project.version
+
+            from components.java
+
+            pom {
+                name = 'r3edge-cloud-registry'
+                description = 'Une librairie de registry cloud-agnostique distribuée pour les microservices spring boot.'
+                url = 'https://github.com/dsissoko/r3edge-cloud-registry'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://opensource.org/licenses/MIT'
+                    }
+                }
+            }
+
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionResult()
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/dsissoko/r3edge-cloud-registry")
+            credentials {
+                username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_USER")
+                password = project.findProperty("gpr.key") ?: System.getenv("TWEAKED_PAT")
+            }
+        }
+    }
+}
+
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs << "-parameters"
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.encoding = "UTF-8"
+}

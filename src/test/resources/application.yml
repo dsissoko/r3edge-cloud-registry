@@ -1,0 +1,7 @@
+r3edge:
+  spring:
+    # --- Feature Toggle (SpringFlip) ---
+    flip:
+      greeting: false
+      featureA: false
+      featureB: false      
