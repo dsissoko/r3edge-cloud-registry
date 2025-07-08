@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: registry-api
+    
+logging:
+  level:
+    root: INFO
+    com.r3edge.cloudregistry: DEBUG
+        
+r3edge:
+  spring:
+    # --- Feature Toggle (SpringFlip) ---
+    flip:
+      greeting: false
+      featureA: false
+      featureB: false
+  registry:
+    instance:
+      external-base-url: https://mon-app.io
+      announced-ip: 1.2.3.4    
+    strategy: hazelcast
+    hazelcast-config: |
+      hazelcast:
+        instance-name: registry-hz-test
+        network:
+          join:
+            multicast:
+              enabled: false
+            tcp-ip:
+              enabled: true
+              member-list:
+                - 10.0.0.1:5701
+                - 10.0.0.2:5701

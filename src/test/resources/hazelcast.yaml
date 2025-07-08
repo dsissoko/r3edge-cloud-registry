@@ -1,0 +1,8 @@
+hazelcast:
+  instance-name: registry-hz-test
+  network:
+    join:
+      multicast:
+        enabled: true
+      tcp-ip:
+        enabled: false

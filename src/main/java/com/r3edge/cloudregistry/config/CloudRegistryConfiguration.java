@@ -1,5 +1,11 @@
 package com.r3edge.cloudregistry.config;
 
-public class CloudRegistryConfiguration {
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 
+import com.r3edge.cloudregistry.ServiceRegistryProperties;
+
+@Configuration
+@EnableConfigurationProperties(ServiceRegistryProperties.class)
+public class CloudRegistryConfiguration {
 }
