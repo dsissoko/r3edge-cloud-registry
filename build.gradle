@@ -83,7 +83,7 @@ dependencies {
 
     // Spring minimum requis pour la lib
     api 'org.springframework.boot:spring-boot-starter'
-    implementation "com.r3edge:r3edge-spring-flip:0.0.6"
+    implementation "com.r3edge:r3edge-spring-flip:0.0.7"
     
     implementation 'com.hazelcast:hazelcast:5.4.0'
     implementation 'com.hazelcast:hazelcast-spring:5.4.0'
