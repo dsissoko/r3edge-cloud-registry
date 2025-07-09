@@ -1,63 +1,44 @@
-name: Build and Test - r3edge-spring-flip
+name: CI – Build & Publish
 
 on:
   push:
-    branches:
+    branches: 
       - main
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
+    tags:
+      - 'v*.*.*'
   pull_request:
     branches:
       - main
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
 
 permissions:
-  contents: read
-  packages: write
+  contents: read     # checkout + lecture de code
+  packages: write    # nécessaire pour read & write packages
 
 jobs:
-  build:
-
+  build-and-publish:
     runs-on: ubuntu-latest
+    
+    env:
+      GPR_USER: ${{ secrets.GPR_USER }}
+      GPR_KEY:  ${{ secrets.GPR_KEY }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-
-      - name: Grant execute permission for Gradle
+      - uses: actions/checkout@v3
+      
+      - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Build and run tests
-        uses: gradle/gradle-build-action@v3
+      - name: Setup Java
+        uses: actions/setup-java@v3
         with:
-          arguments: clean build --info
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
 
-      - name: Publish test results (JUnit)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: build/test-results/test
-
-      - name: Upload coverage report (optional)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: build/reports
+      - name: Build and Test
+        run: ./gradlew clean build --no-daemon
 
       - name: Publish to GitHub Packages
-        if: github.ref == 'refs/heads/main'
-        run: ./gradlew publish
-        env:
-          GITHUB_USER: ${{ github.actor }}
-          TWEAKED_PAT: ${{ secrets.GITHUB_TOKEN }}
+        if: startsWith(github.ref, 'refs/tags/')
+        run: ./gradlew publish --no-daemon
+

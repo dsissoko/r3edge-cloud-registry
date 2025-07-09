@@ -37,10 +37,40 @@ dependencyManagement {
     }
 }
 
+// Au sommet de build.gradle
+def ghUser = project.findProperty('gpr.user') 
+             ?: System.getenv('GPR_USER') 
+             ?: System.getenv('GITHUB_ACTOR')
+def ghKey  = project.findProperty('gpr.key')  
+             ?: System.getenv('GPR_KEY')  
+             ?: System.getenv('GITHUB_TOKEN')
+
+task printCreds {
+  group = "Help"
+  description = "Affiche gpr.user et les variables d'environnement GitHub"
+  doLast {
+    println "gpr.user  -> ${project.findProperty('gpr.user')}"
+    println "gpr.key   -> ${project.findProperty('gpr.key')}"
+    println "GPR_USER  -> ${System.getenv('GPR_USER')}"
+    println "GPR_KEY   -> ${System.getenv('GPR_KEY')}"
+    println "GITHUB_TOKEN -> ${System.getenv('GITHUB_TOKEN')}"
+  }
+}
+
+
 repositories {
     mavenCentral()
     mavenLocal()
     gradlePluginPortal()
+    // GitHub Packages de dsissoko
+    // Dépôt GitHub Packages de r3edge-spring-flip
+    maven {
+        url = uri("https://maven.pkg.github.com/dsissoko/r3edge-spring-flip")
+        credentials {
+            username = ghUser
+            password = ghKey
+        }
+    }
 }
 
 dependencies {
@@ -154,6 +184,8 @@ publishing {
         }
     }
 }
+
+
 
 
 tasks.withType(JavaCompile).configureEach {
