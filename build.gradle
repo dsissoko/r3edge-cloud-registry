@@ -178,10 +178,9 @@ publishing {
             name = "GitHubPackages"
             url = uri("https://maven.pkg.github.com/dsissoko/r3edge-cloud-registry")
             credentials {
-                username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_USER")
-                password = project.findProperty("gpr.key") ?: System.getenv("TWEAKED_PAT")
+                username = ghUser
+                password = ghKey
             }
-        }
     }
 }
 
