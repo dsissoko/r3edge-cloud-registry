@@ -15,6 +15,7 @@ import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.hazelcast.config.Config;
@@ -33,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
     org.springframework.boot.autoconfigure.hazelcast.HazelcastAutoConfiguration.class
 })
 @ActiveProfiles("test-tcpip-hazelcast")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @Slf4j
 public class HazelcastRegistryIntegrationTest2 {
 

@@ -80,11 +80,11 @@ dependencies {
     compileOnly 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
 
     // Spring minimum requis pour la lib
-    compileOnly 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'org.springframework.boot:spring-boot-starter-web'
     implementation "com.r3edge:r3edge-spring-flip:0.0.7"
     
-    compileOnly 'com.hazelcast:hazelcast:5.4.0'
-    compileOnly 'com.hazelcast:hazelcast-spring:5.4.0'
+    implementation 'com.hazelcast:hazelcast:5.4.0'
+    implementation 'com.hazelcast:hazelcast-spring:5.4.0'
 
     // Pour les tests
     testAnnotationProcessor 'org.projectlombok:lombok'
@@ -95,6 +95,8 @@ dependencies {
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-web'
+    //testImplementation 'com.hazelcast:hazelcast:5.4.0'
+    //testImplementation 'com.hazelcast:hazelcast-spring:5.4.0'    
 }
 
 test {
