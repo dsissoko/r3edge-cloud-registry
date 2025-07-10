@@ -21,6 +21,7 @@ r3edge:
     strategy: hazelcast
     hazelcast-config: |
       hazelcast:
+        cluster-name: r3edge-cluster
         instance-name: registry-hz-test
         network:
           join:

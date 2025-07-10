@@ -2,6 +2,7 @@ package com.r3edge.cloudregistry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,6 +33,14 @@ class HazelcastRegistryAutoConfigIntegrationTest {
 
 	@Autowired
 	private ApplicationContext context;
+	
+	@Autowired
+	private HazelcastInstance hazelcastInstance;
+	
+	@BeforeAll
+	static void cleanupHazelcast() {
+	    com.hazelcast.core.Hazelcast.shutdownAll();
+	}
 
     @Test
     void should_initialize_hazelcast_instance_automatically_from_classpath_config() {
@@ -43,5 +52,19 @@ class HazelcastRegistryAutoConfigIntegrationTest {
     @Test
     void should_not_initialize_any_custom_service_registry_when_no_strategy_specified() {
         assertThat(context.getBeansOfType(ServiceRegistry.class)).isEmpty();
+    }
+    
+    
+    @Test
+    void hazelcast_should_apply_custom_yaml_config() {
+        com.hazelcast.config.Config cfg = hazelcastInstance.getConfig();
+        // cluster-name défini dans hazelcast.yaml
+        assertThat(cfg.getClusterName()).isEqualTo("r3edge-cluster-auto-conf");
+        // multicast activé dans hazelcast.yaml
+        assertThat(cfg.getNetworkConfig()
+                      .getJoin()
+                      .getMulticastConfig()
+                      .isEnabled())
+            .isTrue();
     }
 }
