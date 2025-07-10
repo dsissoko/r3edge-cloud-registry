@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -49,6 +50,11 @@ public class HazelcastRegistryIntegrationTest {
         assertThat(features)
         .as("La map des features doit contenir 'greeting'")
         .containsKey("greeting");
+	}
+	
+	@BeforeAll
+	static void cleanupHazelcast() {
+	    com.hazelcast.core.Hazelcast.shutdownAll();
 	}
 
 	@Test
