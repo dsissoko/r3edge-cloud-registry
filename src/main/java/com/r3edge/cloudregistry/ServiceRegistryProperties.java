@@ -14,6 +14,9 @@ public class ServiceRegistryProperties {
     private String hazelcastConfig;
     private InstanceProperties instance = new InstanceProperties();
     
+    /**
+     * Propriétés de l'instance du registre.
+     */    
     @Data
     public static class InstanceProperties {
         private String serviceName;

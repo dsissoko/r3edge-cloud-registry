@@ -28,6 +28,9 @@ public class DummyServiceRegistry implements ServiceRegistry {
     private final Optional<FlipConfiguration> flipConfiguration;
     private ServiceInstance selfInstance;
 
+    /**
+     * Méthode d'initialisation.
+     */
     @PostConstruct
     public void init() {
         if (flipConfiguration.isEmpty()) {
