@@ -86,5 +86,10 @@ public interface ServiceRegistry {
     void shutdown();
     
     
+    /**
+     * Retourne le descripteur du service local.
+     *
+     * @return le descripteur courant
+     */
     ServiceDescriptor getSelfDescriptor();
 }

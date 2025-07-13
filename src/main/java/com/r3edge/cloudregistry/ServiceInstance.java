@@ -42,6 +42,12 @@ public class ServiceInstance {
     /** Indique si l'instance tourne dans un environnement conteneurisé (Docker, K8s...) */
     private boolean containerEnvironment;
 
+    /**
+     * Construit un descripteur de service enrichi avec les features actives.
+     *
+     * @param activeFeatures liste des fonctionnalités actives
+     * @return le descripteur construit
+     */
     public ServiceDescriptor toServiceDescriptor(List<String> activeFeatures) {
         return ServiceDescriptor.builder()
             .serviceName(this.serviceName)

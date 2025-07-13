@@ -15,6 +15,9 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Implémentation fictive du registre de services, utilisée pour les tests.
+ */
 @Component
 @ConditionalOnProperty(prefix = "r3edge.registry", name = "strategy", havingValue = "dummy")
 @RequiredArgsConstructor

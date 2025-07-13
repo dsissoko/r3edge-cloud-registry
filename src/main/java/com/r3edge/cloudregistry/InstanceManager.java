@@ -97,11 +97,18 @@ public class InstanceManager implements ApplicationListener<WebServerInitialized
 				.orElse(List.of());
 	}
 
-	/** Retourne le `ServiceDescriptor` courant basé sur les features actives */
+	/**
+	 * Retourne le descripteur de service associé à cette instance.
+	 *
+	 * @return le descripteur du service
+	 */
 	public ServiceDescriptor getServiceDescriptor() {
 		return serviceInstance.toServiceDescriptor(extractActiveFeatures());
 	}
 
+	/**
+	 * Méthode appelée après la construction de l’instance pour initialisation.
+	 */
 	@PostConstruct
 	public void postConstruct() {
 		log.info("📌 InstanceManager présent dans le contexte Spring.");

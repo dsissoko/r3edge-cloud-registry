@@ -4,6 +4,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import lombok.Data;
 
+/**
+ * Propriétés de configuration pour le registre de services.
+ */
 @ConfigurationProperties(prefix = "r3edge.registry")
 @Data
 public class ServiceRegistryProperties {
