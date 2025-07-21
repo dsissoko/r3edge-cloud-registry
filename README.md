@@ -51,5 +51,66 @@ La librairie repose sur les concepts suivants :
 - **ServiceInstance**  
   Représente un processus concret (instance d’un service) actif dans le cluster. Contient des données runtime (ID, URL, etc.). Une ou plusieurs `ServiceInstance` peuvent être associées à un même `ServiceInfo`.
 
+---
+
+## 🔧 Intégration dans un projet Spring Boot
+
+Déclarer le dépôt:
+
+```groovy
+repositories {
+    mavenCentral()
+    mavenLocal()
+    gradlePluginPortal()
+    // GitHub Packages de dsissoko
+    // Dépôt GitHub Packages de r3edge-spring-flip
+    maven {
+        url = uri("https://maven.pkg.github.com/dsissoko/r3edge-cloud-registry")
+        credentials {
+            username = ghUser
+            password = ghKey
+        }
+    }
+}
+```
+
+Ajoutez la dépendance :
+
+```groovy
+dependencies {
+    implementation "com.r3edge:r3edge-cloud-registry:0.0.3"
+}
+```
+
+Pour Hazelcast, insérez votre config dans `application.yml` :
+
+
+```yaml
+  registry:
+    instance:
+      external-base-url: https://mon-app.io
+      announced-ip: 1.2.3.4    
+    strategy: hazelcast
+    hazelcast-config: |
+      hazelcast:
+        instance-name: r3edge-registry
+        cluster-name: r3edge-cluster
+        network:
+          port:
+            port: 5701
+            auto-increment: true
+          interfaces:
+            enabled: true
+            interfaces:
+              - 127.0.0.1
+          join:
+            tcp-ip:
+              enabled: true
+              member-list:
+                - 127.0.0.1
+                - 127.0.0.2
+```
+
+---
 
 [![CI – Build & Publish](https://github.com/dsissoko/r3edge-cloud-registry/actions/workflows/cicd_code.yml/badge.svg)](https://github.com/dsissoko/r3edge-cloud-registry/actions/workflows/cicd_code.yml)

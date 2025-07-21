@@ -1,9 +1,15 @@
 hazelcast:
-    cluster-name: r3edge-cluster-auto-conf
-    instance-name: registry-hz-test
-    network:
-        join:
-            multicast:
-                enabled: true
-            tcp-ip:
-                enabled: false
+  cluster-name: r3edge-cluster-auto-conf
+  network:
+    port:
+      port: 5701
+      auto-increment: true
+    interfaces:
+      enabled: true
+      interfaces:
+        - 127.0.0.1
+    join:
+      tcp-ip:
+        enabled: true
+        member-list:
+          - 127.0.0.1

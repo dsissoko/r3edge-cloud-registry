@@ -112,8 +112,8 @@ public class HazelcastRegistryIntegrationTest2 {
         Config cfg = hz.getConfig();
 
         assertThat(cfg.getInstanceName())
-            .as("Le nom d'instance doit être 'registry-hz-test'")
-            .isEqualTo("registry-hz-test");
+            .as("Le nom d'instance doit être 'r3edge-registry'")
+            .isEqualTo("r3edge-registry");
 
         JoinConfig join = cfg.getNetworkConfig().getJoin();
 
@@ -131,8 +131,8 @@ public class HazelcastRegistryIntegrationTest2 {
         assertThat(tcpIp.getMembers())
             .as("La liste des membres doit correspondre à celle définie en YAML")
             .containsExactlyInAnyOrder(
-                "10.0.0.1:5701",
-                "10.0.0.2:5701"
+                "127.0.0.1",
+                "127.0.0.2"
             );
     }
 }

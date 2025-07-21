@@ -67,6 +67,6 @@ class HazelcastRegistryAutoConfigIntegrationTest {
                       .getJoin()
                       .getMulticastConfig()
                       .isEnabled())
-            .isTrue();
+            .isFalse();
     }
 }

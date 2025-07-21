@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import org.yaml.snakeyaml.Yaml;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.YamlConfigBuilder;
@@ -58,8 +59,19 @@ public class HazelcastServiceRegistry implements ServiceRegistry {
         try {
             // 1. Chargement du YAML de config
             String yaml = properties.getHazelcastConfig();
+            
+            Yaml snake = new Yaml();
+            Map<String, Object> root = snake.load(properties.getHazelcastConfig());
+            //Object hazelcastNode = root.get("hazelcastConfig");
+            Object hazelcastNode = root;
+            if (hazelcastNode == null) {
+                throw new IllegalArgumentException(
+                        "Le bloc racine 'hazelcast' est manquant dans la configuration fournie");
+            }
+            String cleanYaml = snake.dump(hazelcastNode);
+            
             Config config = new YamlConfigBuilder(
-                new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8))
+                new ByteArrayInputStream(cleanYaml.getBytes(StandardCharsets.UTF_8))
             ).build();
 
             // 2. Vérification d’une instance existante et shutdown si présente
