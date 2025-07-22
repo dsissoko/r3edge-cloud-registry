@@ -186,13 +186,11 @@ publishing {
     }
 }
 
-
-
-
-tasks.withType(JavaCompile).configureEach {
-    options.compilerArgs << "-parameters"
-}
-
 tasks.withType(Javadoc).configureEach {
     options.encoding = "UTF-8"
 }
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+    options.compilerArgs << "-parameters"
+}
+
