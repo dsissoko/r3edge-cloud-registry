@@ -39,7 +39,7 @@ public class InstanceManager implements ApplicationListener<WebServerInitialized
 
 	@Override
 	public void onApplicationEvent(WebServerInitializedEvent event) {
-		log.info("🚀 Web server démarré sur le port {}", event.getWebServer().getPort());
+		log.debug("🚀 Web server démarré sur le port {}", event.getWebServer().getPort());
 
 		int port = event.getWebServer().getPort();
 		String internalIp = resolveInternalIp();

@@ -8,7 +8,7 @@ Une librairie de **registry cloud-agnostique distribuée** pour les microservice
 - La coordination des instances dans un cluster distribué (Docker, K8s, local).
 - Un fallback en mode "dummy" pour les tests ou environnements dégradés.
 
-La lib repose sur **Hazelcast** (mode embedded) et s’intègre dans une application Spring Boot.
+La lib repose sur **Hazelcast 5.5** (tstée uniquement en mode embedded) et s’intègre dans une application Spring Boot.
 
 ---
 
@@ -32,6 +32,7 @@ La lib repose sur **Hazelcast** (mode embedded) et s’intègre dans une applica
    ```yaml
    r3edge.registry.strategy=hazelcast | dummy
    ```
+6. **Toggle de feature via les fichiers de configuration spring boot**: voir [Spring Flip](https://github.com/dsissoko/r3edge-spring-flip)
 
 ---
 
@@ -63,7 +64,7 @@ repositories {
     mavenLocal()
     gradlePluginPortal()
     // GitHub Packages de dsissoko
-    // Dépôt GitHub Packages de r3edge-spring-flip
+    // Dépôt GitHub Packages de r3edge-cloud-registry
     maven {
         url = uri("https://maven.pkg.github.com/dsissoko/r3edge-cloud-registry")
         credentials {
@@ -72,6 +73,13 @@ repositories {
         }
     }
 }
+```
+
+Déclarez vos credentials dans votre gradle.properties ou équivalent
+
+```
+gpr.user=dsissoko
+gpr.key=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
 ```
 
 Ajoutez la dépendance :
@@ -112,5 +120,11 @@ Pour Hazelcast, insérez votre config dans `application.yml` :
 ```
 
 ---
+
+Effectuez vos appels inter services simplement
+
+```java
+
+```
 
 [![CI – Build & Publish](https://github.com/dsissoko/r3edge-cloud-registry/actions/workflows/cicd_code.yml/badge.svg)](https://github.com/dsissoko/r3edge-cloud-registry/actions/workflows/cicd_code.yml)
