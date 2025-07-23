@@ -79,7 +79,7 @@ Déclarez vos credentials dans votre gradle.properties ou équivalent
 
 ```
 gpr.user=dsissoko
-gpr.key=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
+gpr.key=XXXXXXXXXXXXXXXXXX
 ```
 
 Ajoutez la dépendance :
