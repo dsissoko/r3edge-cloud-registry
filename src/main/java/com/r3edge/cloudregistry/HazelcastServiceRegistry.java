@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
  * </p>
  * <p>
  * Si Spring Flip est actif, les features sont recalculées dynamiquement pour l’instance locale
- * à chaque consultation via {@link #getEnabledFeatures(ServiceDescriptor)}.
+ * à chaque consultation via {@link ServiceInstance#getEnabledFeatures()}.
  * </p>
  * <p>
  * L’instance locale est republiée automatiquement lors des événements {@link RefreshScopeRefreshedEvent}.

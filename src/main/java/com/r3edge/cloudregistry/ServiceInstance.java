@@ -57,6 +57,8 @@ public class ServiceInstance {
 
     /**
      * Retourne la liste des features activées dans SpringFlip.
+     *
+     * @return Liste des noms des fonctionnalités activées pour cette instance.
      */
     public List<String> getEnabledFeatures() {
         return Optional.ofNullable(flipConfig.getFlip())
@@ -95,6 +97,11 @@ public class ServiceInstance {
         return String.format("%s://%s:%d", scheme, host, serverPort);
     }
 
+    /**
+     * Définit les métadonnées associées à cette instance.
+     *
+     * @param metadata Métadonnées sous forme clé/valeur.
+     */
     public void setMetadata(Map<String, String> metadata) {
         System.out.println("📥 Injection Spring : " + metadata);
         this.metadata = metadata;
