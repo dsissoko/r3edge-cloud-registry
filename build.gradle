@@ -72,7 +72,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.cloud:spring-cloud-context'
-    implementation "com.r3edge:r3edge-spring-flip:0.0.8"
+    implementation "com.r3edge:r3edge-spring-flip:0.1.1"
     
     // Hazelcast him self
     implementation 'com.hazelcast:hazelcast-spring:5.4.0'
