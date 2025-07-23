@@ -5,38 +5,39 @@
 Une librairie de **registry cloud-agnostique distribuée** pour les microservices, qui permet :
 - L’enregistrement dynamique des instances (nom, URL, features).
 - La résolution d’URL à partir du nom de service ou d’une feature.
-- La coordination des instances dans un cluster distribué (Docker, K8s, local).
-- Un fallback en mode "dummy" pour les tests ou environnements dégradés.
+- La synchronisation des instances dans un cluster distribué (Docker, K8s, local).
 
-La lib repose sur **Hazelcast 5.5** (tstée uniquement en mode embedded) et s’intègre dans une application Spring Boot.
+La lib repose sur **Hazelcast 5.5** (testée uniquement en mode embedded) et s’intègre dans une application Spring Boot.
 
 ---
 
 ## ✅ Cas d’usage principal
 
-- Dans un système de microservices, chaque service s’enregistre au démarrage dans le `ServiceRegistry`.
-- Un autre service peut résoudre dynamiquement une URL d’un service cible (ou d’une feature) sans connaître sa localisation exacte.
-- En option, l’état est mis à jour dynamiquement lors d’un `@RefreshScope`.
+- Chaque microservice s’enregistre automatiquement dans le ServiceRegistry au démarrage.
+- Les autres services peuvent résoudre dynamiquement l’URL d’un service cible ou d’une feature.
+- L’état est mis à jour dynamiquement si l’application utilise @RefreshScope.
 
 ---
 
 ## 🧩 Fonctionnalités proposées
 
-1. **Enregistrement d’instance** avec `serviceName`, `instanceId`, `baseUrl`, `features`.
-2. **Résolution** d’URL par `serviceName` ou par `feature`.
-3. **Unregister automatique** lors du shutdown ou crash du membre Hazelcast.
-4. **Exposition d’une API REST** (optionnelle) :
-   - `GET /registry/instances` → liste des services et URLs
-   - `GET /registry/features` → mapping features ↔ instances
-5. **Conditionnel sur la stratégie** via :
-   ```yaml
-   r3edge.registry.strategy=hazelcast | dummy
-   ```
-6. **Toggle de feature via les fichiers de configuration spring boot**: voir [Spring Flip](https://github.com/dsissoko/r3edge-spring-flip)
+1. Enregistrement automatique avec serviceName, instanceId, baseUrl, features.
+2. Résolution d’URL à partir d’un nom de service ou d’une feature.
+3. Désenregistrement automatique lors d’un shutdown ou crash de membre Hazelcast.
+4. API REST optionnelle :
+   - GET /registry/instances → services et URLs enregistrés
+   - GET /registry/features → features ↔ services
+   - GET /registry/descriptor → description de l'instance courante
+5. Stratégie configurable :
+   
+yaml
+   r3edge.registry.strategy: hazelcast | dummy
+
+6. Intégration directe avec [Spring Flip](https://github.com/dsissoko/r3edge-spring-flip) pour la gestion des features dynamiques.
 
 ---
 
-## ⚙️ Définitions
+## ⚙️ Concepts
 
 La librairie repose sur les concepts suivants :
 
