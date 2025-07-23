@@ -11,13 +11,14 @@ r3edge:
   spring:
     # --- Feature Toggle (SpringFlip) ---
     flip:
-      greeting: false
+      greeting: true
       featureA: false
-      featureB: false
+      featureB: true
   registry:
     instance:
       external-base-url: https://mon-app.io
-      announced-ip: 1.2.3.4
+      metadata:
+        announced-ip: 1.2.3.4
     strategy: hazelcast
     hazelcast-config: |
       hazelcast:

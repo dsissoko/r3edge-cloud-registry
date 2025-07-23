@@ -2,8 +2,6 @@ package com.r3edge.cloudregistry;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -12,10 +10,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import com.r3edge.springflip.FlipConfiguration;
-
 import jakarta.annotation.PostConstruct;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,12 +25,9 @@ import lombok.extern.slf4j.Slf4j;
 public class InstanceManager implements ApplicationListener<WebServerInitializedEvent> {
 
 	private final Environment environment;
-	private final FlipConfiguration flipConfig;
 	private final ServiceRegistry serviceRegistry;
 	private final ServiceRegistryProperties properties;
-
-	@Getter
-	private ServiceInstance serviceInstance;
+	private final ServiceInstance serviceInstance;
 
 	@Override
 	public void onApplicationEvent(WebServerInitializedEvent event) {
@@ -50,18 +42,13 @@ public class InstanceManager implements ApplicationListener<WebServerInitialized
 		String serviceName = Optional.ofNullable(environment.getProperty("spring.application.name")).orElse("unknown-service");
 		boolean sslEnabled = instanceProps.getExternalBaseUrl() != null
 				&& instanceProps.getExternalBaseUrl().startsWith("https");
-		String externalBaseUrl = instanceProps.getExternalBaseUrl();
-		String announcedIp = instanceProps.getAnnouncedIp();
-		String instanceId = buildInstanceId(serviceName, internalIp, port, externalBaseUrl);
+		String instanceId = buildInstanceId(serviceName, internalIp, port, instanceProps.getExternalBaseUrl());
 
-		this.serviceInstance = new ServiceInstance();
 		serviceInstance.setServiceName(serviceName);
 		serviceInstance.setInternalIp(internalIp);
 		serviceInstance.setServerPort(port);
 		serviceInstance.setSslEnabled(sslEnabled);
-		serviceInstance.setExternalBaseUrl(externalBaseUrl);
 		serviceInstance.setInstanceId(instanceId);
-		serviceInstance.setAnnouncedIp(announcedIp);
 		serviceInstance.setContainerEnvironment(isContainer);
 
 		log.info("✅ ServiceInstance initialized: {}", serviceInstance);
@@ -88,22 +75,6 @@ public class InstanceManager implements ApplicationListener<WebServerInitialized
 		} else {
 			return String.format("%s@%s:%d", serviceName, ip, port);
 		}
-	}
-
-	// Seul endroit où les features sont extraites dynamiquement (à la volée)
-	private List<String> extractActiveFeatures() {
-		return Optional.ofNullable(flipConfig.getFlip())
-				.map(map -> map.entrySet().stream().filter(Map.Entry::getValue).map(Map.Entry::getKey).toList())
-				.orElse(List.of());
-	}
-
-	/**
-	 * Retourne le descripteur de service associé à cette instance.
-	 *
-	 * @return le descripteur du service
-	 */
-	public ServiceDescriptor getServiceDescriptor() {
-		return serviceInstance.toServiceDescriptor(extractActiveFeatures());
 	}
 
 	/**
