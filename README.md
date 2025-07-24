@@ -96,29 +96,34 @@ Pour Hazelcast, insérez votre config dans `application.yml` :
 
 
 ```yaml
+r3edge:
   registry:
     instance:
-      external-base-url: https://mon-app.io
-      announced-ip: 1.2.3.4    
+      external-base-url: http://10.0.0.1
+      announced-ip: 10.0.0.1
     strategy: hazelcast
     hazelcast-config: |
       hazelcast:
         instance-name: r3edge-registry
         cluster-name: r3edge-cluster
         network:
+          public-address: 10.0.0.1        
           port:
             port: 5701
             auto-increment: true
+            port-count: 10
           interfaces:
-            enabled: true
-            interfaces:
-              - 127.0.0.1
+            enabled: false
           join:
+            auto-detection:
+              enabled: false         
+            multicast:
+              enabled: false          
             tcp-ip:
               enabled: true
               member-list:
-                - 127.0.0.1
-                - 127.0.0.2
+                - 10.0.0.1
+                - 10.0.0.2
 ```
 
 ---
