@@ -1,12 +1,18 @@
-# r3edge-cloud-registry
+# r3edge-cloud-registry | ![Logo](logo_ds.png)
+
+> 🚀 Pourquoi adopter `r3edge-cloud-registry` ?
+>
+> ✅ Remplace **Eureka** (service discovery)  
+> ✅ Remplace **Ribbon** (load balancing côté client)  
+> ✅ **Zéro serveur externe** à déployer  
+> ✅ 100 % compatible **Spring Boot**  
+> ✅ Basé sur **Hazelcast** → haute disponibilité, résilience, distribution native  
+> ✅ Intégration ultra simple : **juste une dépendance à ajouter**
+
 
 ## 🎯 Objectif
 
-Une librairie de **registry cloud-agnostique distribuée** pour les microservices, qui permet :
-- L’enregistrement dynamique des instances (nom, URL, features).
-- La résolution d’URL à partir du nom de service ou d’une feature.
-- La synchronisation des instances dans un cluster distribué (Docker, K8s, local).
-
+Bénéficier d'un mécanisme de registre de service distribué sans ajouter de serveur comme Eureka ou Consul avec une librairie java à simplement ajouter dans les dépendances de vos micro services spring boot.
 La lib repose sur **Hazelcast 5.5** (testée uniquement en mode embedded) et s’intègre dans une application Spring Boot.
 
 ---
@@ -14,7 +20,7 @@ La lib repose sur **Hazelcast 5.5** (testée uniquement en mode embedded) et s�
 ## ✅ Cas d’usage principal
 
 - Chaque microservice s’enregistre automatiquement dans le ServiceRegistry au démarrage.
-- Les autres services peuvent résoudre dynamiquement l’URL d’un service cible ou d’une feature.
+- Les autres services peuvent résoudre dynamiquement l’URL d’un service cible ou d’une feature 
 - L’état est mis à jour dynamiquement si l’application utilise @RefreshScope.
 
 ---
@@ -22,8 +28,8 @@ La lib repose sur **Hazelcast 5.5** (testée uniquement en mode embedded) et s�
 ## 🧩 Fonctionnalités proposées
 
 1. Enregistrement automatique avec serviceName, instanceId, baseUrl, features.
-2. Résolution d’URL à partir d’un nom de service ou d’une feature.
-3. Désenregistrement automatique lors d’un shutdown ou crash de membre Hazelcast.
+2. Résolution d’URL à partir d’un nom de service ou d’une feature avec load balancing client (random)
+3. Désenregistrement automatique lors d’un shutdown ou crash de membre du cluster
 4. API REST optionnelle :
    - GET /registry/instances → services et URLs enregistrés
    - GET /registry/features → features ↔ services
@@ -44,7 +50,7 @@ La librairie repose sur les concepts suivants :
 - **Registry**  
   Composant distribué embarqué dans chaque microservice. Il s’appuie sur Hazelcast pour permettre l’enregistrement, la découverte et la coordination des services au sein du cluster.
 
-- **ServiceInfo**  
+- **ServiceDescriptor**  
   Représentation logique d’un service. Contient un nom unique et une liste de features. Il ne reflète pas un processus actif, mais une capacité fonctionnelle offerte dans le système.
 
 - **Feature**  
@@ -125,7 +131,24 @@ Pour Hazelcast, insérez votre config dans `application.yml` :
 Effectuez vos appels inter services simplement
 
 ```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.client.RestTemplate;
 
+@Autowired
+private ServiceRegistry serviceRegistry;
+
+@Autowired
+private RestTemplate restTemplate;
+
+public void callSharedExchangeApi() {
+    String baseUrl = serviceRegistry.resolveExternalServiceUrl("shared-api");
+    if (baseUrl == null) {
+        throw new IllegalStateException("Service shared-api indisponible");
+    }
+
+    String fullUrl = baseUrl + "/api/backend/shared/exchanges";
+    restTemplate.getForObject(fullUrl, Void.class);
+}
 ```
 
 [![CI – Build & Publish](https://github.com/dsissoko/r3edge-cloud-registry/actions/workflows/cicd_code.yml/badge.svg)](https://github.com/dsissoko/r3edge-cloud-registry/actions/workflows/cicd_code.yml)

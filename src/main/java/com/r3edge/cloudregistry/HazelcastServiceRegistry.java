@@ -2,10 +2,15 @@ package com.r3edge.cloudregistry;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cloud.context.scope.refresh.RefreshScopeRefreshedEvent;
@@ -13,6 +18,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.Yaml;
 
+import com.hazelcast.cluster.MembershipEvent;
+import com.hazelcast.cluster.MembershipListener;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.YamlConfigBuilder;
 import com.hazelcast.core.Hazelcast;
@@ -56,6 +63,7 @@ public class HazelcastServiceRegistry implements ServiceRegistry {
 
     /** Nom de la map Hazelcast contenant les {@link ServiceDescriptor} */
     private static final String REGISTRY_MAP_NAME = "r3edge-service-registry";
+    private static final String INTERNAL_KEY_HAZELCAST_UUID = "__internal__hazelcast_uuid";
 
     /**
      * Retourne la map Hazelcast contenant les {@link ServiceDescriptor}.
@@ -105,6 +113,40 @@ public class HazelcastServiceRegistry implements ServiceRegistry {
         } else {
             log.info("🔄 Spring Flip détecté, features dynamiques activées");
         }
+        
+        // 💥 MembershipListener pour nettoyage des instances orphelines
+        hazelcast.getCluster().addMembershipListener(new MembershipListener() {
+            @Override
+            public void memberRemoved(MembershipEvent event) {
+                String removedUuid = event.getMember().getUuid().toString();
+                log.warn("⚠️ Membre Hazelcast supprimé : {}", removedUuid);
+
+                int count = 0;
+                for (Map.Entry<String, ServiceDescriptor> entry : getRegistryMap().entrySet()) {
+                    ServiceDescriptor desc = entry.getValue();
+                    String uuidInMetadata = Optional.ofNullable(desc.getMetadata())
+                                                    .map(m -> m.get(INTERNAL_KEY_HAZELCAST_UUID))
+                                                    .orElse(null);
+
+                    if (removedUuid.equals(uuidInMetadata)) {
+                        getRegistryMap().remove(entry.getKey());
+                        log.info("🧹 Instance orpheline supprimée : {}", entry.getKey());
+                        count++;
+                    }
+                }
+
+                if (count == 0) {
+                    log.info("ℹ️ Aucun ServiceDescriptor à nettoyer pour {}", removedUuid);
+                } else {
+                    log.info("✅ {} instance(s) nettoyée(s) suite au départ du membre {}", count, removedUuid);
+                }
+            }
+
+            @Override
+            public void memberAdded(MembershipEvent event) {
+                log.info("👋 Nouveau membre Hazelcast détecté : {}", event.getMember().getUuid());
+            }
+        });
     }
 
     /**
@@ -112,10 +154,14 @@ public class HazelcastServiceRegistry implements ServiceRegistry {
      */
     @PreDestroy
     public void destroy() {
-        if (hazelcast != null) {
-            log.info("🛑 Arrêt Hazelcast instance '{}'", hazelcast.getName());
-            hazelcast.shutdown();
-        }
+    	if (selfInstance != null) {
+    	    log.info("🧹 Nettoyage selfInstance avant arrêt : {}", selfInstance.getInstanceId());
+    	    unregisterInstance(selfInstance.getInstanceId());
+    	}
+    	if (hazelcast != null) {
+    	    log.info("🛑 Arrêt Hazelcast instance '{}'", hazelcast.getName());
+    	    hazelcast.shutdown();
+    	}
     }
 
     /**
@@ -245,6 +291,17 @@ public class HazelcastServiceRegistry implements ServiceRegistry {
         log.warn("🔻 shutdown() appelé manuellement");
         destroy();
     }
+    
+    protected String pickRandomUrl(Stream<ServiceDescriptor> stream, Function<ServiceDescriptor, String> extractor) {
+        List<String> urls = stream
+            .map(extractor)
+            .filter(Objects::nonNull)
+            .toList();
+
+        if (urls.isEmpty()) return null;
+        return urls.get(ThreadLocalRandom.current().nextInt(urls.size()));
+    }
+
 
     /**
      * Résout l’URL interne (cluster) d’un service.
@@ -254,11 +311,11 @@ public class HazelcastServiceRegistry implements ServiceRegistry {
      */
     @Override
     public String resolveInternalServiceUrl(String serviceName) {
-        return getRegistryMap().values().stream()
-            .filter(d -> d.getServiceName().equals(serviceName))
-            .map(ServiceDescriptor::getInternalBaseUrl)
-            .findFirst()
-            .orElse(null);
+        return pickRandomUrl(
+            getRegistryMap().values().stream()
+                .filter(d -> d.getServiceName().equals(serviceName)),
+            ServiceDescriptor::getInternalBaseUrl
+        );
     }
 
     /**
@@ -269,11 +326,11 @@ public class HazelcastServiceRegistry implements ServiceRegistry {
      */
     @Override
     public String resolveExternalServiceUrl(String serviceName) {
-        return getRegistryMap().values().stream()
-            .filter(d -> d.getServiceName().equals(serviceName))
-            .map(ServiceDescriptor::getExternalBaseUrl)
-            .findFirst()
-            .orElse(null);
+        return pickRandomUrl(
+            getRegistryMap().values().stream()
+                .filter(d -> serviceName.equals(d.getServiceName())),
+            ServiceDescriptor::getExternalBaseUrl
+        );
     }
 
     /**
@@ -284,12 +341,12 @@ public class HazelcastServiceRegistry implements ServiceRegistry {
      */
     @Override
     public String resolveInternalFeatureUrl(String feature) {
-        return getRegistryMap().values().stream()
-            .filter(d -> selfInstance.getEnabledFeatures().contains(feature))
-            .map(ServiceDescriptor::getInternalBaseUrl)
-            .findFirst()
-            .orElse(null);
-    }
+        return pickRandomUrl(
+                getRegistryMap().values().stream()
+                    .filter(d -> selfInstance.getEnabledFeatures().contains(feature)),
+                ServiceDescriptor::getInternalBaseUrl
+            );
+        }
 
     /**
      * Résout l’URL externe d’une feature donnée.
@@ -299,11 +356,11 @@ public class HazelcastServiceRegistry implements ServiceRegistry {
      */
     @Override
     public String resolveExternalFeatureUrl(String feature) {
-        return getRegistryMap().values().stream()
-            .filter(d -> selfInstance.getEnabledFeatures().contains(feature))
-            .map(ServiceDescriptor::getExternalBaseUrl)
-            .findFirst()
-            .orElse(null);
+        return pickRandomUrl(
+                getRegistryMap().values().stream()
+                    .filter(d -> selfInstance.getEnabledFeatures().contains(feature)),
+                ServiceDescriptor::getExternalBaseUrl
+            );
     }
 
     /**
@@ -320,8 +377,17 @@ public class HazelcastServiceRegistry implements ServiceRegistry {
      */
     public void registerSelf() {
         if (selfInstance == null) return;
+
         var descriptor = selfInstance.toServiceDescriptor();
+
+        String hazelcastUuid = hazelcast.getCluster().getLocalMember().getUuid().toString();
+        Map<String, String> enrichedMetadata = descriptor.getMetadata() != null
+                ? new HashMap<>(descriptor.getMetadata())
+                : new HashMap<>();
+        enrichedMetadata.put(INTERNAL_KEY_HAZELCAST_UUID, hazelcastUuid);
+        descriptor.setMetadata(enrichedMetadata);
+
         getRegistryMap().put(selfInstance.getInstanceId(), descriptor);
-        log.info("📥 Publication selfInstance : {}", descriptor);
+        log.info("📥 Publication selfInstance avec UUID Hazelcast : {} → {}", hazelcastUuid, descriptor.getInstanceId());
     }
 }
