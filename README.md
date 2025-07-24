@@ -34,12 +34,7 @@ La lib repose sur **Hazelcast 5.5** (testée uniquement en mode embedded) et s�
    - GET /registry/instances → services et URLs enregistrés
    - GET /registry/features → features ↔ services
    - GET /registry/descriptor → description de l'instance courante
-5. Stratégie configurable :
-   
-yaml
-   r3edge.registry.strategy: hazelcast | dummy
-
-6. Intégration directe avec [Spring Flip](https://github.com/dsissoko/r3edge-spring-flip) pour la gestion des features dynamiques.
+5. Intégration directe avec [Spring Flip](https://github.com/dsissoko/r3edge-spring-flip) pour la gestion des features dynamiques.
 
 ---
 
