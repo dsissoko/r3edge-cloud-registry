@@ -88,7 +88,7 @@ Ajoutez la dépendance :
 
 ```groovy
 dependencies {
-    implementation "com.r3edge:r3edge-cloud-registry:0.0.3"
+    implementation "com.r3edge:r3edge-cloud-registry:0.1.2"
 }
 ```
 
