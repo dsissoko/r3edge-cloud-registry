@@ -114,39 +114,9 @@ public class HazelcastServiceRegistry implements ServiceRegistry {
             log.info("🔄 Spring Flip détecté, features dynamiques activées");
         }
         
-        // 💥 MembershipListener pour nettoyage des instances orphelines
-        hazelcast.getCluster().addMembershipListener(new MembershipListener() {
-            @Override
-            public void memberRemoved(MembershipEvent event) {
-                String removedUuid = event.getMember().getUuid().toString();
-                log.warn("⚠️ Membre Hazelcast supprimé : {}", removedUuid);
-
-                int count = 0;
-                for (Map.Entry<String, ServiceDescriptor> entry : getRegistryMap().entrySet()) {
-                    ServiceDescriptor desc = entry.getValue();
-                    String uuidInMetadata = Optional.ofNullable(desc.getMetadata())
-                                                    .map(m -> m.get(INTERNAL_KEY_HAZELCAST_UUID))
-                                                    .orElse(null);
-
-                    if (removedUuid.equals(uuidInMetadata)) {
-                        getRegistryMap().remove(entry.getKey());
-                        log.info("🧹 Instance orpheline supprimée : {}", entry.getKey());
-                        count++;
-                    }
-                }
-
-                if (count == 0) {
-                    log.info("ℹ️ Aucun ServiceDescriptor à nettoyer pour {}", removedUuid);
-                } else {
-                    log.info("✅ {} instance(s) nettoyée(s) suite au départ du membre {}", count, removedUuid);
-                }
-            }
-
-            @Override
-            public void memberAdded(MembershipEvent event) {
-                log.info("👋 Nouveau membre Hazelcast détecté : {}", event.getMember().getUuid());
-            }
-        });
+        HazelcastClusterListener listener = new HazelcastClusterListener();
+        hazelcast.getCluster().addMembershipListener(listener);
+        hazelcast.getLifecycleService().addLifecycleListener(listener);     
     }
 
     /**
@@ -390,4 +360,59 @@ public class HazelcastServiceRegistry implements ServiceRegistry {
         getRegistryMap().put(selfInstance.getInstanceId(), descriptor);
         log.info("📥 Publication selfInstance avec UUID Hazelcast : {} → {}", hazelcastUuid, descriptor.getInstanceId());
     }
+    
+    private class HazelcastClusterListener implements MembershipListener, com.hazelcast.core.LifecycleListener {
+
+        @Override
+        public void memberRemoved(MembershipEvent event) {
+            String removedUuid = event.getMember().getUuid().toString();
+            log.warn("⚠️ Membre Hazelcast supprimé : {}", removedUuid);
+
+            int count = 0;
+            for (Map.Entry<String, ServiceDescriptor> entry : getRegistryMap().entrySet()) {
+                ServiceDescriptor desc = entry.getValue();
+                String uuidInMetadata = Optional.ofNullable(desc.getMetadata())
+                                                .map(m -> m.get(INTERNAL_KEY_HAZELCAST_UUID))
+                                                .orElse(null);
+
+                if (removedUuid.equals(uuidInMetadata)) {
+                    getRegistryMap().remove(entry.getKey());
+                    log.info("🧹 Instance orpheline supprimée : {}", entry.getKey());
+                    count++;
+                }
+            }
+
+            if (count == 0) {
+                log.info("ℹ️ Aucun ServiceDescriptor à nettoyer pour {}", removedUuid);
+            } else {
+                log.info("✅ {} instance(s) nettoyée(s) suite au départ du membre {}", count, removedUuid);
+            }
+        }
+
+        @Override
+        public void memberAdded(MembershipEvent event) {
+            log.info("👋 Nouveau membre Hazelcast détecté : {}", event.getMember().getUuid());
+        }
+
+        @Override
+        public void stateChanged(com.hazelcast.core.LifecycleEvent event) {
+            switch (event.getState()) {
+                case MERGED:
+                    log.info("🔄 Hazelcast MERGED – Réenregistrement dans la registry");
+                    registerSelf();
+                    break;
+                case STARTED:
+                    if (selfInstance != null) {
+                        log.info("🔄 Hazelcast STARTED – Re-publication post-redémarrage");
+                        registerSelf();
+                    } else {
+                        log.debug("🌀 Hazelcast STARTED ignoré – selfInstance encore null");
+                    }
+                    break;
+                default:
+                    log.debug("ℹ️ Changement d’état Hazelcast ignoré : {}", event.getState());
+            }
+        }
+    }
+
 }
