@@ -30,7 +30,7 @@ La lib repose sur **Hazelcast 5.5** (testée uniquement en mode embedded) et s�
 1. Enregistrement automatique avec serviceName, instanceId, baseUrl, features.
 2. Résolution d’URL à partir d’un nom de service ou d’une feature avec load balancing client (random)
 3. Désenregistrement automatique lors d’un shutdown ou crash de membre du cluster
-4. API REST optionnelle :
+4. API REST optionnelle (flippable en positonnant "r3edge.cloudregistry.registryController: false" dans la conf applicative):
    - GET `{base-path}/instances` → services et URLs enregistrés
    - GET `{base-path}/features` → features ↔ services
    - GET `{base-path}/descriptor` → description de l'instance courante
