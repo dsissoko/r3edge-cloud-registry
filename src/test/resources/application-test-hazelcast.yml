@@ -6,6 +6,7 @@ logging:
   level:
     root: INFO
     com.r3edge.cloudregistry: DEBUG
+    org.springframework.web.servlet.mvc.method.annotation: DEBUG
         
 r3edge:
   spring:
@@ -15,6 +16,7 @@ r3edge:
       featureA: false
       featureB: true
   registry:
+    #base-path: /test-endpoint    
     instance:
       external-base-url: https://mon-app.io
       metadata:

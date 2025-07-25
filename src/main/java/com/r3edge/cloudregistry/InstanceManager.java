@@ -83,5 +83,6 @@ public class InstanceManager implements ApplicationListener<WebServerInitialized
 	@PostConstruct
 	public void postConstruct() {
 		log.info("📌 InstanceManager présent dans le contexte Spring.");
+		log.info("🔧 registry.base-path = {}", properties.getBasePath());
 	}
 }

@@ -13,6 +13,10 @@ public class ServiceRegistryProperties {
     private String strategy;
     private String hazelcastConfig;
     private InstanceProperties instance = new InstanceProperties();
+    /**
+     * Préfixe des endpoints REST exposés par RegistryController.
+     */
+    private String basePath = "/registry";
     
     /**
      * Propriétés de l'instance du registre.

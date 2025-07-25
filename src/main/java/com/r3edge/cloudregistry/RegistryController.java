@@ -20,43 +20,53 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class RegistryController {
 
-    private final ServiceRegistry serviceRegistry;
+	private final ServiceRegistry serviceRegistry;
 
-    /**
-     * Retourne la liste des services enregistrés.
-     *
-     * @return map service → liste de descripteurs
-     */
-    @GetMapping("/registry/instances")
-    public Map<String, List<ServiceDescriptor>> listServices() {
-        return serviceRegistry.getRegisteredServices();
-    }
+	/**
+	 * Retourne la liste des services enregistrés.
+	 *
+	 * @return map service → liste de descripteurs
+	 */
+	@GetMapping("${r3edge.registry.base-path:/registry}/instances")
+	public Map<String, List<ServiceDescriptor>> listServices() {
+		log.debug("📥 [GET] /instances — Appel listServices()");
+		Map<String, List<ServiceDescriptor>> result = serviceRegistry.getRegisteredServices();
+		log.debug("📤 [GET] /instances — Réponse avec {} services", result.size());
+		return result;
+	}
 
-    /**
-     * Retourne la liste des services groupés par feature.
-     *
-     * @return map feature → liste de descripteurs
-     */
-    @GetMapping("/registry/features")
-    public Map<String, List<ServiceDescriptor>> listFeatures() {
-        return serviceRegistry.getRegisteredFeatures();
-    }
-    
-    /**
-     * Retourne le descripteur de l’instance locale.
-     *
-     * @return descripteur de l’instance courante
-     */
-    @GetMapping("/registry/descriptor")
-    public ServiceDescriptor getSelfDescriptor() {
-        return serviceRegistry.getSelfDescriptor();
-    }
-    
-    /**
-     * Initialisation post-construction.
-     */
+	/**
+	 * Retourne la liste des services groupés par feature.
+	 *
+	 * @return map feature → liste de descripteurs
+	 */
+	@GetMapping("${r3edge.registry.base-path:/registry}/features")
+	public Map<String, List<ServiceDescriptor>> listFeatures() {
+        log.debug("📥 [GET] /features — Appel listFeatures()");
+        Map<String, List<ServiceDescriptor>> result = serviceRegistry.getRegisteredFeatures();
+        log.debug("📤 [GET] /features — Réponse avec {} features", result.size());
+        return result;
+	}
+
+	/**
+	 * Retourne le descripteur de l’instance locale.
+	 *
+	 * @return descripteur de l’instance courante
+	 */
+	@GetMapping("${r3edge.registry.base-path:/registry}/descriptor")
+	public ServiceDescriptor getSelfDescriptor() {
+        log.debug("📥 [GET] /descriptor — Appel getSelfDescriptor()");
+        ServiceDescriptor descriptor = serviceRegistry.getSelfDescriptor();
+        log.debug("📤 [GET] /descriptor — Réponse : {}", descriptor);
+        return descriptor;
+	}
+
+	/**
+	 * Initialisation post-construction.
+	 */
     @PostConstruct
     public void postConstruct() {
         log.debug("📡 [RegistryController] Actif – Bean ServiceRegistry utilisé : {}", serviceRegistry.getClass().getSimpleName());
+        log.debug("🔍 Mappings REST initiaux : basePath='{}'", System.getProperty("r3edge.registry.base-path"));
     }
 }
