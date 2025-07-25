@@ -3,6 +3,7 @@ package com.r3edge.cloudregistry;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,6 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 public class RegistryController {
 
 	private final ServiceRegistry serviceRegistry;
+	@Value("${r3edge.registry.base-path:/registry}")
+	private String basePath;
 
 	/**
 	 * Retourne la liste des services enregistrés.
@@ -70,6 +73,6 @@ public class RegistryController {
     @PostConstruct
     public void postConstruct() {
         log.debug("📡 [RegistryController] Actif – Bean ServiceRegistry utilisé : {}", serviceRegistry.getClass().getSimpleName());
-        log.debug("🔍 Mappings REST initiaux : basePath='{}'", System.getProperty("r3edge.registry.base-path"));
+        log.debug("🔍 Mappings REST initiaux : basePath='{}'", basePath);
     }
 }
