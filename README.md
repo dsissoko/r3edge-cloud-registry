@@ -31,9 +31,11 @@ La lib repose sur **Hazelcast 5.5** (testée uniquement en mode embedded) et s�
 2. Résolution d’URL à partir d’un nom de service ou d’une feature avec load balancing client (random)
 3. Désenregistrement automatique lors d’un shutdown ou crash de membre du cluster
 4. API REST optionnelle :
-   - GET /registry/instances → services et URLs enregistrés
-   - GET /registry/features → features ↔ services
-   - GET /registry/descriptor → description de l'instance courante
+   - GET `{base-path}/instances` → services et URLs enregistrés
+   - GET `{base-path}/features` → features ↔ services
+   - GET `{base-path}/descriptor` → description de l'instance courante
+
+> ℹ️ `{base-path}` est configurable via `r3edge.registry.base-path` (par défaut : `/registry`)
 5. Intégration directe avec [Spring Flip](https://github.com/dsissoko/r3edge-spring-flip) pour la gestion des features dynamiques.
 
 ---
@@ -98,6 +100,7 @@ Pour Hazelcast, insérez votre config dans `application.yml` :
 ```yaml
 r3edge:
   registry:
+    base-path: /test-endpoint
     instance:
       external-base-url: http://10.0.0.1
       announced-ip: 10.0.0.1
