@@ -15,6 +15,7 @@ r3edge:
       greeting: true
       featureA: false
       featureB: true
+      cloudregistry.registryController: true
   registry:
     #base-path: /test-endpoint    
     instance:

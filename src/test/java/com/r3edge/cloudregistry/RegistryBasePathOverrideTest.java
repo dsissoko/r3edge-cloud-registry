@@ -20,7 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 	    classes = TestApplication.class,
 	    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
 	    properties = {
-	        "r3edge.registry.base-path=/test-endpoint"
+	        "r3edge.registry.base-path=/test-endpoint",
+	        "spring.flip.cloudregistry.registryController=true"
 	    }
 	)
 @ImportAutoConfiguration(exclude = {

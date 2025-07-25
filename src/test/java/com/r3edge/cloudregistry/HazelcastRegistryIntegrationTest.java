@@ -81,7 +81,7 @@ public class HazelcastRegistryIntegrationTest {
         assertEquals("registry-api", descriptor.getServiceName());
         assertTrue(descriptor.getInstanceId().contains("registry-api@"));
         assertThat(descriptor.getFeatures())
-        .containsExactlyInAnyOrder("greeting", "featureB");
+        .containsExactlyInAnyOrder("greeting", "featureB", "cloudregistry.registryController");
         assertThat(descriptor.getExternalBaseUrl()).isEqualTo("https://mon-app.io");
         assertThat(descriptor.getMetadata()).containsEntry("announced-ip", "1.2.3.4");
     }
