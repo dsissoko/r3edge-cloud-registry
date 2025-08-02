@@ -10,7 +10,7 @@ La lib repose sur **Hazelcast 5.5** (testée uniquement en mode embedded) et s�
 > ✅ **Zéro serveur externe** à déployer  
 > ✅ 100 % compatible **Spring Boot**  
 > ✅ Basé sur **Hazelcast** → haute disponibilité, résilience, distribution native  
-> ✅ Intégration ultra simple : **juste une dépendance à ajouter**
+> ✅ Intégration ultra simple : **juste une dépendance à ajouter**  
 > ✅ **Hot Reload** des données de registre (@RefreshScope + config server + bus refresh)
 
 This project is documented in French 🇫🇷 by default.  
@@ -20,30 +20,21 @@ An auto-translated English version is available here:
 
 ---
 
-## ✅ Cas d’usage principal
+## 📋 Fonctionnalités clés
 
-- Chaque microservice s’enregistre automatiquement dans le ServiceRegistry au démarrage et forme un cluster Hazelcat.
-- Les autres services peuvent résoudre dynamiquement l’URL d’un service cible ou d’une feature 
-- L’état est mis à jour dynamiquement si l’application utilise @RefreshScope.
 
----
+- ✅ Enregistrement automatique avec serviceName, instanceId, baseUrl, features.
+- ✅ Résolution d’URL à partir d’un nom de service ou d’une feature avec load balancing client (random)
+- ✅ Désenregistrement automatique lors d’un shutdown ou crash de membre du cluster
+- ✅ API REST optionnelle (flippable en positonnant "r3edge.cloudregistry.registryController: false" dans la conf applicative):
+    - GET `{base-path}/instances` → services et URLs enregistrés
+    - GET `{base-path}/features` → features ↔ services
+    - GET `{base-path}/descriptor` → description de l'instance courante  
+    - ℹ️ `{base-path}` est configurable via `r3edge.registry.base-path` (par défaut : `/registry`) 
+   
+- ✅ Intégration complète avec [Spring Flip](https://github.com/dsissoko/r3edge-spring-flip) pour la gestion des features dynamiques.
 
-## 🧩 Fonctionnalités proposées
-
-1. Enregistrement automatique avec serviceName, instanceId, baseUrl, features.
-2. Résolution d’URL à partir d’un nom de service ou d’une feature avec load balancing client (random)
-3. Désenregistrement automatique lors d’un shutdown ou crash de membre du cluster
-4. API REST optionnelle (flippable en positonnant "r3edge.cloudregistry.registryController: false" dans la conf applicative):
-   - GET `{base-path}/instances` → services et URLs enregistrés
-   - GET `{base-path}/features` → features ↔ services
-   - GET `{base-path}/descriptor` → description de l'instance courante
-
-> ℹ️ `{base-path}` est configurable via `r3edge.registry.base-path` (par défaut : `/registry`)
-5. Intégration directe avec [Spring Flip](https://github.com/dsissoko/r3edge-spring-flip) pour la gestion des features dynamiques.
-
----
-
-## ⚙️ Concepts
+### ⚙️ Concepts
 
 La librairie repose sur les concepts suivants :
 
@@ -61,16 +52,13 @@ La librairie repose sur les concepts suivants :
 
 ---
 
-## 🔧 Intégration dans un projet Spring Boot
+## ⚙️ Intégration rapide
 
-Déclarer le dépôt:
+### Ajouter les dépendances nécessaires:
 
 ```groovy
 repositories {
     mavenCentral()
-    mavenLocal()
-    gradlePluginPortal()
-    // GitHub Packages de dsissoko
     // Dépôt GitHub Packages de r3edge-cloud-registry
     maven {
         url = uri("https://maven.pkg.github.com/dsissoko/r3edge-cloud-registry")
@@ -79,26 +67,26 @@ repositories {
             password = ghKey
         }
     }
+    mavenLocal()
 }
-```
 
-Déclarez vos credentials dans votre gradle.properties ou équivalent
-
-```
-gpr.user=dsissoko
-gpr.key=XXXXXXXXXXXXXXXXXX
-```
-
-Ajoutez la dépendance :
-
-```groovy
 dependencies {
+    ...
     implementation "com.r3edge:r3edge-cloud-registry:0.1.5"
+    ...
 }
 ```
 
-Pour Hazelcast, insérez votre config dans `application.yml` :
+> ⚠️ Cette librairie est publiée sur **GitHub Packages**: Même en open source, **GitHub impose une authentification** pour accéder aux dépendances.  
+> Il faudra donc valoriser ghUser et ghKey dans votre gradle.properties:
 
+```properties
+#pour réccupérer des packages github 
+ghUser=your_github_user
+ghKey=github_token_with_read_package_scope
+```
+
+### Configurez votre service dans votre `application.yml`:
 
 ```yaml
 r3edge:
@@ -132,9 +120,11 @@ r3edge:
                 - 10.0.0.2
 ```
 
----
+> ℹ️ Au démarrage, vos microservice vont constituer un cluster Hazelcast   
+> ℹ️ La configuration Hazelcast est native et lue à partir du champ hazelcast-config. Toutes les options sont donc disponibles en théorie  
+> ℹ️ L'état du registre est rafraîchi grâce à un double mécanisme: celui d'Hazelcast (heartbeat des membres du cluster) et celui de spring cloud bus avec spring cloud server ce qui permet un hot reload très fiable des features des services !
 
-Effectuez vos appels inter services simplement
+### Localisez et effectuez vos appels inter-service:
 
 ```java
 import org.springframework.beans.factory.annotation.Autowired;
@@ -156,5 +146,23 @@ public void callSharedExchangeApi() {
     restTemplate.getForObject(fullUrl, Void.class);
 }
 ```
+
+> ℹ️ La résolution des services peux se faire **par nom ou par feature**. 
+> ℹ️ un **loadbalancing basé sur un algo random** renvoie le service qui répond au critère. 
+
+---
+
+## 📦 Stack de référence
+
+
+✅ Cette librairie a été conçue et testée avec :
+
+- Java 17+
+- Spring Boot 3.x
+- Hazelcast 5.x
+- Spring Cloud Config Server *(pour le support du rafraîchissement dynamique, optionnel)*
+- Spring Cloud Bus *(si vous souhaitez synchroniser les mises à jour de configuration)*
+
+---
 
 [![CI – Build & Publish](https://github.com/dsissoko/r3edge-cloud-registry/actions/workflows/cicd_code.yml/badge.svg)](https://github.com/dsissoko/r3edge-cloud-registry/actions/workflows/cicd_code.yml)
