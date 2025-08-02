@@ -160,8 +160,7 @@ public void callSharedExchangeApi() {
 - Java 17+
 - Spring Boot 3.x
 - Hazelcast 5.x
-- Spring Cloud Config Server *(pour le support du rafraîchissement dynamique, optionnel)*
-- Spring Cloud Bus *(si vous souhaitez synchroniser les mises à jour de configuration)*
+- Spring Cloud Config Server et Spring Cloud Bus *(pour le support du rafraîchissement dynamique, optionnel)*
 
 ---
 
@@ -171,7 +170,7 @@ public void callSharedExchangeApi() {
 - RAS
 
 ### 🧠 En réflexion
-- Load balancing intellignet basé sur les infos actuator
+- Load balancing intelligent basé sur les infos actuator
 
 ---
 
