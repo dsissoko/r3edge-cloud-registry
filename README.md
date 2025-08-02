@@ -1,6 +1,6 @@
 # r3edge-cloud-registry | ![Logo](logo_ds.png)
 
-R3edge Cloud Registry est une librairie Java de service discovery basée sur Hazelcast, pour l’enregistrement et la découverte dynamiques de services dans une architecture distribuée. Cela vous évite de mettre en oeuvre un serveur supplémentaire comme Eureka ou Consul.
+R3edge Cloud Registry est une librairie Java de **service discovery** basée sur `Hazelcast`, pour l’enregistrement et la découverte dynamiques de services dans une architecture distribuée. Cela vous évite de mettre en oeuvre un serveur supplémentaire comme Eureka ou Consul.
 La lib repose sur **Hazelcast 5.5** (testée uniquement en mode embedded) et s’intègre dans une application Spring Boot.
 
 > 🚀 Pourquoi adopter `r3edge-cloud-registry` ?
@@ -147,8 +147,8 @@ public void callSharedExchangeApi() {
 }
 ```
 
-> ℹ️ La résolution des services peux se faire **par nom ou par feature**. 
-> ℹ️ un **loadbalancing basé sur un algo random** renvoie le service qui répond au critère. 
+> ℹ️ La résolution des services peux se faire **par nom ou par feature**  
+> ℹ️ un **loadbalancing basé sur un algo random** renvoie le service qui répond au critère  
 
 ---
 
@@ -164,5 +164,17 @@ public void callSharedExchangeApi() {
 - Spring Cloud Bus *(si vous souhaitez synchroniser les mises à jour de configuration)*
 
 ---
+
+## 🗺️ Roadmap
+
+### 🔧 À venir
+- RAS
+
+### 🧠 En réflexion
+- Load balancing intellignet basé sur les infos actuator
+
+---
+
+📫 Maintenu par [@dsissoko](https://github.com/dsissoko) – contributions bienvenues.
 
 [![CI – Build & Publish](https://github.com/dsissoko/r3edge-cloud-registry/actions/workflows/cicd_code.yml/badge.svg)](https://github.com/dsissoko/r3edge-cloud-registry/actions/workflows/cicd_code.yml)
