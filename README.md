@@ -1,5 +1,8 @@
 # r3edge-cloud-registry | ![Logo](logo_ds.png)
 
+R3edge Cloud Registry est une librairie Java de service discovery basée sur Hazelcast, pour l’enregistrement et la découverte dynamiques de services dans une architecture distribuée. Cela vous évite de mettre en oeuvre un serveur supplémentaire comme Eureka ou Consul.
+La lib repose sur **Hazelcast 5.5** (testée uniquement en mode embedded) et s’intègre dans une application Spring Boot.
+
 > 🚀 Pourquoi adopter `r3edge-cloud-registry` ?
 >
 > ✅ Remplace **Eureka** (service discovery)  
@@ -8,18 +11,18 @@
 > ✅ 100 % compatible **Spring Boot**  
 > ✅ Basé sur **Hazelcast** → haute disponibilité, résilience, distribution native  
 > ✅ Intégration ultra simple : **juste une dépendance à ajouter**
+> ✅ **Hot Reload** des données de registre (@RefreshScope + config server + bus refresh)
 
+This project is documented in French 🇫🇷 by default.  
+An auto-translated English version is available here:
 
-## 🎯 Objectif
-
-Bénéficier d'un mécanisme de registre de service distribué sans ajouter de serveur comme Eureka ou Consul avec une librairie java à simplement ajouter dans les dépendances de vos micro services spring boot.
-La lib repose sur **Hazelcast 5.5** (testée uniquement en mode embedded) et s’intègre dans une application Spring Boot.
+[👉 English (auto-translated by Google)](https://translate.google.com/translate?sl=auto&tl=en&u=https://github.com/dsissoko/r3edge-cloud-registry)
 
 ---
 
 ## ✅ Cas d’usage principal
 
-- Chaque microservice s’enregistre automatiquement dans le ServiceRegistry au démarrage.
+- Chaque microservice s’enregistre automatiquement dans le ServiceRegistry au démarrage et forme un cluster Hazelcat.
 - Les autres services peuvent résoudre dynamiquement l’URL d’un service cible ou d’une feature 
 - L’état est mis à jour dynamiquement si l’application utilise @RefreshScope.
 
