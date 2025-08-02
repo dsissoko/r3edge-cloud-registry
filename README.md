@@ -122,7 +122,7 @@ r3edge:
 
 > ℹ️ Au démarrage, vos microservice vont constituer un cluster Hazelcast   
 > ℹ️ La configuration Hazelcast est native et lue à partir du champ hazelcast-config. Toutes les options sont donc disponibles en théorie  
-> ℹ️ L'état du registre est rafraîchi grâce à un double mécanisme: celui d'Hazelcast (heartbeat des membres du cluster) et celui de spring cloud bus avec spring cloud server ce qui permet un hot reload très fiable des features des services !
+> ℹ️ L'état du registre est rafraîchi grâce à un double mécanisme: celui d'Hazelcast (heartbeat des membres du cluster) et celui de spring cloud bus avec spring cloud server ce qui permet un hot reload très fiable des features des services ! 
 
 ### Localisez et effectuez vos appels inter-service:
 
