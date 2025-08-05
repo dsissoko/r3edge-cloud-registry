@@ -35,9 +35,9 @@ public class RegistryController {
 	 */
 	@GetMapping("${r3edge.registry.base-path:/registry}/instances")
 	public Map<String, List<ServiceDescriptor>> listServices() {
-		log.debug("📥 [GET] /instances — Appel listServices()");
+		log.debug("[GET] /instances — Appel listServices()");
 		Map<String, List<ServiceDescriptor>> result = serviceRegistry.getRegisteredServices();
-		log.debug("📤 [GET] /instances — Réponse avec {} services", result.size());
+		log.debug("[GET] /instances — Réponse avec {} services", result.size());
 		return result;
 	}
 
@@ -48,9 +48,9 @@ public class RegistryController {
 	 */
 	@GetMapping("${r3edge.registry.base-path:/registry}/features")
 	public Map<String, List<ServiceDescriptor>> listFeatures() {
-        log.debug("📥 [GET] /features — Appel listFeatures()");
+        log.debug("[GET] /features — Appel listFeatures()");
         Map<String, List<ServiceDescriptor>> result = serviceRegistry.getRegisteredFeatures();
-        log.debug("📤 [GET] /features — Réponse avec {} features", result.size());
+        log.debug("[GET] /features — Réponse avec {} features", result.size());
         return result;
 	}
 
@@ -61,9 +61,9 @@ public class RegistryController {
 	 */
 	@GetMapping("${r3edge.registry.base-path:/registry}/descriptor")
 	public ServiceDescriptor getSelfDescriptor() {
-        log.debug("📥 [GET] /descriptor — Appel getSelfDescriptor()");
+        log.debug("[GET] /descriptor — Appel getSelfDescriptor()");
         ServiceDescriptor descriptor = serviceRegistry.getSelfDescriptor();
-        log.debug("📤 [GET] /descriptor — Réponse : {}", descriptor);
+        log.debug("[GET] /descriptor — Réponse : {}", descriptor);
         return descriptor;
 	}
 
@@ -72,7 +72,7 @@ public class RegistryController {
 	 */
     @PostConstruct
     public void postConstruct() {
-        log.debug("📡 [RegistryController] Actif – Bean ServiceRegistry utilisé : {}", serviceRegistry.getClass().getSimpleName());
-        log.debug("🔍 Mappings REST initiaux : basePath='{}'", basePath);
+        log.debug("[RegistryController] Actif – Bean ServiceRegistry utilisé : {}", serviceRegistry.getClass().getSimpleName());
+        log.debug("Mappings REST initiaux : basePath='{}'", basePath);
     }
 }

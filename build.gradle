@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'com.r3edge'
-version = '0.1.5'
+version = '0.1.6'
 
 base {
     archivesName = 'r3edge-cloud-registry'
@@ -65,17 +65,17 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
-    //implementation 'org.springframework.boot:spring-boot-starter-json'
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
-
-    // Spring minimum requis pour la lib
-    implementation 'org.springframework.boot:spring-boot-starter'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.cloud:spring-cloud-context'
-    implementation "com.r3edge:r3edge-spring-flip:0.1.1"
+    // Librairies exposées à l'utilisateur
+    api "com.r3edge:r3edge-spring-flip:0.1.1"
+    api 'org.springframework.cloud:spring-cloud-context'
+    api 'org.springframework:spring-context'
+    api 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
     
     // Hazelcast him self
-    implementation 'com.hazelcast:hazelcast-spring:5.4.0'
+    compileOnly 'com.hazelcast:hazelcast-spring:5.5.0'
+    // pour les controller registry/*, il faut web et servlet
+    compileOnly 'org.springframework:spring-web'
+    compileOnly 'jakarta.servlet:jakarta.servlet-api'
 
     // Pour les tests
     testAnnotationProcessor 'org.projectlombok:lombok'
@@ -86,6 +86,8 @@ dependencies {
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-web'
+    // Pour les tests unitaires qui utilisent Hazelcast
+    testImplementation 'com.hazelcast:hazelcast-spring:5.5.0'
 }
 
 test {

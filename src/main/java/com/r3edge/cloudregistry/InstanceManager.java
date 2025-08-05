@@ -31,7 +31,7 @@ public class InstanceManager implements ApplicationListener<WebServerInitialized
 
 	@Override
 	public void onApplicationEvent(WebServerInitializedEvent event) {
-		log.debug("🚀 Web server démarré sur le port {}", event.getWebServer().getPort());
+		log.debug("✅ Web server démarré sur le port {}", event.getWebServer().getPort());
 
 		int port = event.getWebServer().getPort();
 		String internalIp = resolveInternalIp();
@@ -82,7 +82,7 @@ public class InstanceManager implements ApplicationListener<WebServerInitialized
 	 */
 	@PostConstruct
 	public void postConstruct() {
-		log.info("📌 InstanceManager présent dans le contexte Spring.");
-		log.info("🔧 registry.base-path = {}", properties.getBasePath());
+		log.info("✅ InstanceManager actif dans le contexte Spring.");
+		log.info("ℹ️ registry.base-path = {}", properties.getBasePath());
 	}
 }

@@ -14,10 +14,12 @@ import java.util.stream.Stream;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cloud.context.scope.refresh.RefreshScopeRefreshedEvent;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.Yaml;
 
+import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.cluster.MembershipEvent;
 import com.hazelcast.cluster.MembershipListener;
 import com.hazelcast.config.Config;
@@ -25,6 +27,7 @@ import com.hazelcast.config.YamlConfigBuilder;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
+import com.hazelcast.spring.context.SpringManagedContext;
 import com.r3edge.springflip.FlipConfiguration;
 
 import jakarta.annotation.PostConstruct;
@@ -34,385 +37,394 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Implémentation de {@link ServiceRegistry} utilisant Hazelcast comme backend de stockage.
+ * Implémentation de {@link ServiceRegistry} utilisant Hazelcast comme backend
+ * de stockage.
  * <p>
- * Elle gère une map Hazelcast partagée, dans laquelle chaque instance de microservice
- * publie un {@link ServiceDescriptor} décrivant ses capacités exposées.
+ * Elle gère une map Hazelcast partagée, dans laquelle chaque instance de
+ * microservice publie un {@link ServiceDescriptor} décrivant ses capacités
+ * exposées.
  * </p>
  * <p>
- * Si Spring Flip est actif, les features sont recalculées dynamiquement pour l’instance locale
- * à chaque consultation via {@link ServiceInstance#getEnabledFeatures()}.
+ * Si Spring Flip est actif, les features sont recalculées dynamiquement pour
+ * l’instance locale à chaque consultation via
+ * {@link ServiceInstance#getEnabledFeatures()}.
  * </p>
  * <p>
- * L’instance locale est republiée automatiquement lors des événements {@link RefreshScopeRefreshedEvent}.
+ * L’instance locale est republiée automatiquement lors des événements
+ * {@link RefreshScopeRefreshedEvent}.
  * </p>
  */
-@Component
+@Component("hazelcastServiceRegistry")
 @ConditionalOnProperty(prefix = "r3edge.registry", name = "strategy", havingValue = "hazelcast")
 @RequiredArgsConstructor
 @Slf4j
 public class HazelcastServiceRegistry implements ServiceRegistry {
 
-    private final ServiceRegistryProperties properties;
-    private final Optional<FlipConfiguration> flipConfiguration;
+	private final ApplicationContext springContext;
+	private final ServiceRegistryProperties properties;
+	private final Optional<FlipConfiguration> flipConfiguration;
+	@Getter
+	private boolean clientMode = false;
+	@Getter
+	private ClientConfig clientConfig;
 
-    @Getter
-    private HazelcastInstance hazelcast;
+	@Getter
+	private HazelcastInstance hazelcast;
 
-    private ServiceInstance selfInstance;
+	private ServiceInstance selfInstance;
 
-    /** Nom de la map Hazelcast contenant les {@link ServiceDescriptor} */
-    private static final String REGISTRY_MAP_NAME = "r3edge-service-registry";
-    private static final String INTERNAL_KEY_HAZELCAST_UUID = "__internal__hazelcast_uuid";
+	/** Nom de la map Hazelcast contenant les {@link ServiceDescriptor} */
+	private static final String REGISTRY_MAP_NAME = "r3edge-service-registry";
+	private static final String INTERNAL_KEY_HAZELCAST_UUID = "__internal__hazelcast_uuid";
 
-    /**
-     * Retourne la map Hazelcast contenant les {@link ServiceDescriptor}.
-     *
-     * @return map partagée dans le cluster
-     */
-    private IMap<String, ServiceDescriptor> getRegistryMap() {
-        return hazelcast.getMap(REGISTRY_MAP_NAME);
-    }
+	/**
+	 * Retourne la map Hazelcast contenant les {@link ServiceDescriptor}.
+	 *
+	 * @return map partagée dans le cluster
+	 */
+	private IMap<String, ServiceDescriptor> getRegistryMap() {
+		return hazelcast.getMap(REGISTRY_MAP_NAME);
+	}
 
-    /**
-     * Initialise Hazelcast à partir de la configuration YAML fournie.
-     * Si une instance Hazelcast du même nom existe déjà, elle est arrêtée proprement.
-     */
-    @PostConstruct
-    public void init() {
-        try {
-            String yaml = properties.getHazelcastConfig();
-            Yaml snake = new Yaml();
-            Map<String, Object> root = snake.load(yaml);
-            Object hazelcastNode = root;
-            if (hazelcastNode == null) {
-                throw new IllegalArgumentException("Bloc racine 'hazelcast' manquant");
-            }
-            String cleanYaml = snake.dump(hazelcastNode);
-            Config config = new YamlConfigBuilder(
-                    new ByteArrayInputStream(cleanYaml.getBytes(StandardCharsets.UTF_8))
-            ).build();
+	/**
+	 * Initialise Hazelcast à partir de la configuration YAML fournie. Si une
+	 * instance Hazelcast du même nom existe déjà, elle est arrêtée proprement.
+	 */
+	@PostConstruct
+	public void init() {
+		try {
+			String yaml = properties.getHazelcastConfig();
+			Yaml snake = new Yaml();
+			Map<String, Object> root = snake.load(yaml);
+			Object hazelcastNode = root;
+			if (hazelcastNode == null) {
+				throw new IllegalArgumentException("Bloc racine 'hazelcast' manquant");
+			}
 
-            String instanceName = config.getInstanceName();
-            HazelcastInstance existing = Hazelcast.getHazelcastInstanceByName(instanceName);
-            if (existing != null) {
-                log.info("🛑 Instance Hazelcast '{}' déjà existante. Fermeture...", instanceName);
-                existing.shutdown();
-            }
+			this.clientMode = root.containsKey("hazelcast-client");
 
-            this.hazelcast = Hazelcast.newHazelcastInstance(config);
-            log.info("✅ Hazelcast initialisé : {}", instanceName);
+			String cleanYaml = snake.dump(hazelcastNode);
 
-        } catch (Exception e) {
-            log.error("❌ Échec de l'initialisation Hazelcast", e);
-            throw new IllegalStateException("Failed to initialize Hazelcast", e);
-        }
+			if (!clientMode) {
+				Config config = new YamlConfigBuilder(
+						new ByteArrayInputStream(cleanYaml.getBytes(StandardCharsets.UTF_8))).build();
 
-        if (flipConfiguration.isEmpty()) {
-            log.warn("⚠️ Spring Flip non détecté, les features ne seront pas dynamiques");
-        } else {
-            log.info("🔄 Spring Flip détecté, features dynamiques activées");
-        }
-        
-        HazelcastClusterListener listener = new HazelcastClusterListener();
-        hazelcast.getCluster().addMembershipListener(listener);
-        hazelcast.getLifecycleService().addLifecycleListener(listener);     
-    }
+			    SpringManagedContext managedContext = new SpringManagedContext();
+			    managedContext.setApplicationContext(springContext);
+			    config.setManagedContext(managedContext);
+			    log.info("✅ SpringManagedContext injecté – les tâches Hazelcast distribuées et annotées @SpringAware peuvent accéder aux beans Spring");
 
-    /**
-     * Arrête proprement l’instance Hazelcast.
-     */
-    @PreDestroy
-    public void destroy() {
-    	if (selfInstance != null) {
-    	    log.info("🧹 Nettoyage selfInstance avant arrêt : {}", selfInstance.getInstanceId());
-    	    unregisterInstance(selfInstance.getInstanceId());
-    	}
-    	if (hazelcast != null) {
-    	    log.info("🛑 Arrêt Hazelcast instance '{}'", hazelcast.getName());
-    	    hazelcast.shutdown();
-    	}
-    }
+				String instanceName = config.getInstanceName();
+				HazelcastInstance existing = Hazelcast.getHazelcastInstanceByName(instanceName);			
+				if (existing != null) {
+					log.warn("⚠️ Instance Hazelcast '{}' déjà existante. Fermeture...", instanceName);
+					existing.shutdown();
+				}
 
-    /**
-     * Initialise l’instance locale et l’enregistre dans Hazelcast.
-     *
-     * @param selfInstance instance locale à enregistrer
-     */
-    @Override
-    public void completeInit(ServiceInstance selfInstance) {
-        this.selfInstance = selfInstance;
-        log.info("✅ SelfInstance initialisé : {}", selfInstance);
-        registerSelf();
-    }
+				this.hazelcast = Hazelcast.newHazelcastInstance(config);
+				log.info("✅ Hazelcast initialisé : {}", instanceName);
+			} else if (clientMode) {
+				clientConfig = new com.hazelcast.client.config.YamlClientConfigBuilder(
+						new ByteArrayInputStream(cleanYaml.getBytes(StandardCharsets.UTF_8))).build();
 
-    /**
-     * Méthode non utilisée dans cette implémentation.
-     * L'enregistrement doit se faire via {@link #registerSelf()}.
-     */
-    @Override
-    public void register(ServiceDescriptor descriptor) {
-        log.warn("⚠️ register(ServiceDescriptor) ignoré – utiliser registerSelf()");
-    }
+				this.hazelcast = com.hazelcast.client.HazelcastClient.newHazelcastClient(clientConfig);
+				log.info("✅ Hazelcast client initialisé (cluster: {})", clientConfig.getClusterName());
+			}
 
-    /**
-     * Supprime toutes les instances d’un service donné de la registry.
-     *
-     * @param serviceName nom du service
-     */
-    @Override
-    public void unregister(String serviceName) {
-        log.info("🗑️ Unregister tous les services '{}'", serviceName);
-        getRegistryMap().values().removeIf(d -> d.getServiceName().equals(serviceName));
-    }
+		} catch (Exception e) {
+			log.error("❌ Échec de l'initialisation Hazelcast", e);
+			throw new IllegalStateException("Failed to initialize Hazelcast", e);
+		}
 
-    /**
-     * Supprime une instance précise de la registry.
-     *
-     * @param instanceId identifiant de l’instance
-     */
-    @Override
-    public void unregisterInstance(String instanceId) {
-        log.info("🗑️ Unregister instance '{}'", instanceId);
-        getRegistryMap().remove(instanceId);
-    }
+		if (flipConfiguration.isEmpty()) {
+			log.warn("⚠️ Spring Flip non détecté, les features ne seront pas dynamiques");
+		} else {
+			log.info("✅ Spring Flip détecté, features dynamiques activées");
+		}
 
-    /**
-     * Supprime une feature d’une instance spécifique.
-     *
-     * @param instanceId identifiant de l’instance
-     * @param feature nom de la feature à retirer
-     */
-    @Override
-    public void unregisterFeature(String instanceId, String feature) {
-        log.info("🗑️ Unregister feature '{}' from instance '{}'", feature, instanceId);
-        ServiceDescriptor descriptor = getRegistryMap().get(instanceId);
-        if (descriptor != null && descriptor.getFeatures() != null) {
-            List<String> updated = descriptor.getFeatures().stream()
-                    .filter(f -> !f.equals(feature))
-                    .toList();
-            descriptor.setFeatures(updated);
-            getRegistryMap().put(instanceId, descriptor);
-        }
-    }
+		HazelcastClusterListener listener = new HazelcastClusterListener();
+		hazelcast.getCluster().addMembershipListener(listener);
+		hazelcast.getLifecycleService().addLifecycleListener(listener);
+	}
 
-    /**
-     * Retourne la liste des services enregistrés, regroupés par nom logique.
-     * Les features sont recalculées dynamiquement si Spring Flip est actif.
-     */
-    @Override
-    public Map<String, List<ServiceDescriptor>> getRegisteredServices() {
-        return getRegistryMap().values().stream()
-            .map(this::cloneWithDynamicFeatures)
-            .collect(Collectors.groupingBy(
-                ServiceDescriptor::getServiceName
-            ));
-    }
+	/**
+	 * Arrête proprement l’instance Hazelcast.
+	 */
+	@PreDestroy
+	public void destroy() {
+		if (selfInstance != null) {
+			log.info("✅ Nettoyage selfInstance avant arrêt : {}", selfInstance.getInstanceId());
+			unregisterInstance(selfInstance.getInstanceId());
+		}
+		if (hazelcast != null) {
+			log.info("ℹ️ Arrêt Hazelcast instance '{}'", hazelcast.getName());
+			hazelcast.shutdown();
+		}
+	}
 
-    /**
-     * Retourne la liste des instances par feature exposée.
-     * Les features sont recalculées dynamiquement si Spring Flip est actif.
-     */
-    @Override
-    public Map<String, List<ServiceDescriptor>> getRegisteredFeatures() {
-        return getRegistryMap().values().stream()
-            .flatMap(d -> {
-                List<String> enabled = selfInstance.getEnabledFeatures();
-                return enabled.stream()
-                    .map(f -> Map.entry(f, cloneWithDynamicFeatures(d)));
-            })
-            .collect(Collectors.groupingBy(
-                Map.Entry::getKey,
-                Collectors.mapping(Map.Entry::getValue, Collectors.toList())
-            ));
-    }
+	/**
+	 * Initialise l’instance locale et l’enregistre dans Hazelcast.
+	 *
+	 * @param selfInstance instance locale à enregistrer
+	 */
+	@Override
+	public void completeInit(ServiceInstance selfInstance) {
+		this.selfInstance = selfInstance;
+		log.info("✅ SelfInstance initialisé : {}", selfInstance);
+		registerSelf();
+	}
 
-    /**
-     * Clone un {@link ServiceDescriptor} en recalculant dynamiquement ses features.
-     *
-     * @param d descripteur d’origine
-     * @return descripteur cloné avec les features à jour
-     */
-    private ServiceDescriptor cloneWithDynamicFeatures(ServiceDescriptor d) {
-        return ServiceDescriptor.builder()
-                .serviceName(d.getServiceName())
-                .instanceId(d.getInstanceId())
-                .internalBaseUrl(d.getInternalBaseUrl())
-                .externalBaseUrl(d.getExternalBaseUrl())
-                .features(selfInstance.getEnabledFeatures())
-                .metadata(d.getMetadata() != null ? d.getMetadata() : Map.of())
-                .build();
-    }
+	/**
+	 * Méthode non utilisée dans cette implémentation. L'enregistrement doit se
+	 * faire via {@link #registerSelf()}.
+	 */
+	@Override
+	public void register(ServiceDescriptor descriptor) {
+		log.warn("⚠️ register(ServiceDescriptor) ignoré – utiliser registerSelf()");
+	}
 
-    /**
-     * Retourne le {@link ServiceDescriptor} de l’instance locale avec les features dynamiques.
-     */
-    @Override
-    public ServiceDescriptor getSelfDescriptor() {
-        if (selfInstance == null) return null;
-        return selfInstance.toServiceDescriptor();
-    }
+	/**
+	 * Supprime toutes les instances d’un service donné de la registry.
+	 *
+	 * @param serviceName nom du service
+	 */
+	@Override
+	public void unregister(String serviceName) {
+		log.info("ℹ️ Unregister tous les services '{}'", serviceName);
+		getRegistryMap().values().removeIf(d -> d.getServiceName().equals(serviceName));
+	}
 
-    /**
-     * Arrête Hazelcast manuellement.
-     */
-    @Override
-    public void shutdown() {
-        log.warn("🔻 shutdown() appelé manuellement");
-        destroy();
-    }
-    
-    protected String pickRandomUrl(Stream<ServiceDescriptor> stream, Function<ServiceDescriptor, String> extractor) {
-        List<String> urls = stream
-            .map(extractor)
-            .filter(Objects::nonNull)
-            .toList();
+	/**
+	 * Supprime une instance précise de la registry.
+	 *
+	 * @param instanceId identifiant de l’instance
+	 */
+	@Override
+	public void unregisterInstance(String instanceId) {
+		log.info("ℹ️ Unregister instance '{}'", instanceId);
+		getRegistryMap().remove(instanceId);
+	}
 
-        if (urls.isEmpty()) return null;
-        return urls.get(ThreadLocalRandom.current().nextInt(urls.size()));
-    }
+	/**
+	 * Supprime une feature d’une instance spécifique.
+	 *
+	 * @param instanceId identifiant de l’instance
+	 * @param feature    nom de la feature à retirer
+	 */
+	@Override
+	public void unregisterFeature(String instanceId, String feature) {
+		log.info("ℹ️ Unregister feature '{}' from instance '{}'", feature, instanceId);
+		ServiceDescriptor descriptor = getRegistryMap().get(instanceId);
+		if (descriptor != null && descriptor.getFeatures() != null) {
+			List<String> updated = descriptor.getFeatures().stream().filter(f -> !f.equals(feature)).toList();
+			descriptor.setFeatures(updated);
+			getRegistryMap().put(instanceId, descriptor);
+		}
+	}
 
+	/**
+	 * Retourne la liste des services enregistrés, regroupés par nom logique. Les
+	 * features sont recalculées dynamiquement si Spring Flip est actif.
+	 */
+	@Override
+	public Map<String, List<ServiceDescriptor>> getRegisteredServices() {
+		return getRegistryMap().values().stream().map(this::cloneWithDynamicFeatures)
+				.collect(Collectors.groupingBy(ServiceDescriptor::getServiceName));
+	}
 
-    /**
-     * Résout l’URL interne (cluster) d’un service.
-     *
-     * @param serviceName nom logique
-     * @return URL interne ou null si non trouvé
-     */
-    @Override
-    public String resolveInternalServiceUrl(String serviceName) {
-        return pickRandomUrl(
-            getRegistryMap().values().stream()
-                .filter(d -> d.getServiceName().equals(serviceName)),
-            ServiceDescriptor::getInternalBaseUrl
-        );
-    }
+	/**
+	 * Retourne la liste des instances par feature exposée. Les features sont
+	 * recalculées dynamiquement si Spring Flip est actif.
+	 */
+	@Override
+	public Map<String, List<ServiceDescriptor>> getRegisteredFeatures() {
+		return getRegistryMap().values().stream().flatMap(d -> {
+			List<String> enabled = selfInstance.getEnabledFeatures();
+			return enabled.stream().map(f -> Map.entry(f, cloneWithDynamicFeatures(d)));
+		}).collect(
+				Collectors.groupingBy(Map.Entry::getKey, Collectors.mapping(Map.Entry::getValue, Collectors.toList())));
+	}
 
-    /**
-     * Résout l’URL externe (reverse proxy) d’un service.
-     *
-     * @param serviceName nom logique
-     * @return URL externe ou null si non trouvé
-     */
-    @Override
-    public String resolveExternalServiceUrl(String serviceName) {
-        return pickRandomUrl(
-            getRegistryMap().values().stream()
-                .filter(d -> serviceName.equals(d.getServiceName())),
-            ServiceDescriptor::getExternalBaseUrl
-        );
-    }
+	/**
+	 * Clone un {@link ServiceDescriptor} en recalculant dynamiquement ses features.
+	 *
+	 * @param d descripteur d’origine
+	 * @return descripteur cloné avec les features à jour
+	 */
+	private ServiceDescriptor cloneWithDynamicFeatures(ServiceDescriptor d) {
+		return ServiceDescriptor.builder().serviceName(d.getServiceName()).instanceId(d.getInstanceId())
+				.internalBaseUrl(d.getInternalBaseUrl()).externalBaseUrl(d.getExternalBaseUrl())
+				.features(selfInstance.getEnabledFeatures())
+				.metadata(d.getMetadata() != null ? d.getMetadata() : Map.of()).build();
+	}
 
-    /**
-     * Résout l’URL interne d’une feature donnée.
-     *
-     * @param feature nom de la feature
-     * @return URL interne ou null si aucune instance ne l’expose
-     */
-    @Override
-    public String resolveInternalFeatureUrl(String feature) {
-        return pickRandomUrl(
-                getRegistryMap().values().stream()
-                    .filter(d -> selfInstance.getEnabledFeatures().contains(feature)),
-                ServiceDescriptor::getInternalBaseUrl
-            );
-        }
+	/**
+	 * Retourne le {@link ServiceDescriptor} de l’instance locale avec les features
+	 * dynamiques.
+	 */
+	@Override
+	public ServiceDescriptor getSelfDescriptor() {
+		if (selfInstance == null)
+			return null;
+		return selfInstance.toServiceDescriptor();
+	}
 
-    /**
-     * Résout l’URL externe d’une feature donnée.
-     *
-     * @param feature nom de la feature
-     * @return URL externe ou null si aucune instance ne l’expose
-     */
-    @Override
-    public String resolveExternalFeatureUrl(String feature) {
-        return pickRandomUrl(
-                getRegistryMap().values().stream()
-                    .filter(d -> selfInstance.getEnabledFeatures().contains(feature)),
-                ServiceDescriptor::getExternalBaseUrl
-            );
-    }
+	/**
+	 * Arrête Hazelcast manuellement.
+	 */
+	@Override
+	public void shutdown() {
+		log.warn("ℹ️ shutdown() appelé manuellement");
+		destroy();
+	}
 
-    /**
-     * Met à jour la publication de l’instance locale suite à un refresh Spring Cloud.
-     */
-    @EventListener(RefreshScopeRefreshedEvent.class)
-    public void onRefresh() {
-        log.info("🔁 RefreshScope détecté – re-publication de selfInstance");
-        registerSelf();
-    }
+	/**
+	 * Sélectionne aléatoirement une URL parmi celles extraites d'un flux de {@link ServiceDescriptor}.
+	 *
+	 * @param stream le flux de descripteurs de service
+	 * @param extractor fonction permettant d’extraire l’URL depuis un descripteur
+	 * @return une URL choisie au hasard parmi celles extraites, ou null s'il n'y en a aucune
+	 */
+	protected String pickRandomUrl(Stream<ServiceDescriptor> stream, Function<ServiceDescriptor, String> extractor) {
+		List<String> urls = stream.map(extractor).filter(Objects::nonNull).toList();
 
-    /**
-     * Publie l’instance locale dans la registry Hazelcast.
-     */
-    public void registerSelf() {
-        if (selfInstance == null) return;
+		if (urls.isEmpty())
+			return null;
+		return urls.get(ThreadLocalRandom.current().nextInt(urls.size()));
+	}
 
-        var descriptor = selfInstance.toServiceDescriptor();
+	/**
+	 * Résout l’URL interne (cluster) d’un service.
+	 *
+	 * @param serviceName nom logique
+	 * @return URL interne ou null si non trouvé
+	 */
+	@Override
+	public String resolveInternalServiceUrl(String serviceName) {
+		return pickRandomUrl(getRegistryMap().values().stream().filter(d -> d.getServiceName().equals(serviceName)),
+				ServiceDescriptor::getInternalBaseUrl);
+	}
 
-        String hazelcastUuid = hazelcast.getCluster().getLocalMember().getUuid().toString();
-        Map<String, String> enrichedMetadata = descriptor.getMetadata() != null
-                ? new HashMap<>(descriptor.getMetadata())
-                : new HashMap<>();
-        enrichedMetadata.put(INTERNAL_KEY_HAZELCAST_UUID, hazelcastUuid);
-        descriptor.setMetadata(enrichedMetadata);
+	/**
+	 * Résout l’URL externe (reverse proxy) d’un service.
+	 *
+	 * @param serviceName nom logique
+	 * @return URL externe ou null si non trouvé
+	 */
+	@Override
+	public String resolveExternalServiceUrl(String serviceName) {
+		return pickRandomUrl(getRegistryMap().values().stream().filter(d -> serviceName.equals(d.getServiceName())),
+				ServiceDescriptor::getExternalBaseUrl);
+	}
 
-        getRegistryMap().put(selfInstance.getInstanceId(), descriptor);
-        log.info("📥 Publication selfInstance avec UUID Hazelcast : {} → {}", hazelcastUuid, descriptor.getInstanceId());
-    }
-    
-    private class HazelcastClusterListener implements MembershipListener, com.hazelcast.core.LifecycleListener {
+	/**
+	 * Résout l’URL interne d’une feature donnée.
+	 *
+	 * @param feature nom de la feature
+	 * @return URL interne ou null si aucune instance ne l’expose
+	 */
+	@Override
+	public String resolveInternalFeatureUrl(String feature) {
+		return pickRandomUrl(
+				getRegistryMap().values().stream().filter(d -> selfInstance.getEnabledFeatures().contains(feature)),
+				ServiceDescriptor::getInternalBaseUrl);
+	}
 
-        @Override
-        public void memberRemoved(MembershipEvent event) {
-            String removedUuid = event.getMember().getUuid().toString();
-            log.warn("⚠️ Membre Hazelcast supprimé : {}", removedUuid);
+	/**
+	 * Résout l’URL externe d’une feature donnée.
+	 *
+	 * @param feature nom de la feature
+	 * @return URL externe ou null si aucune instance ne l’expose
+	 */
+	@Override
+	public String resolveExternalFeatureUrl(String feature) {
+		return pickRandomUrl(
+				getRegistryMap().values().stream().filter(d -> selfInstance.getEnabledFeatures().contains(feature)),
+				ServiceDescriptor::getExternalBaseUrl);
+	}
 
-            int count = 0;
-            for (Map.Entry<String, ServiceDescriptor> entry : getRegistryMap().entrySet()) {
-                ServiceDescriptor desc = entry.getValue();
-                String uuidInMetadata = Optional.ofNullable(desc.getMetadata())
-                                                .map(m -> m.get(INTERNAL_KEY_HAZELCAST_UUID))
-                                                .orElse(null);
+	/**
+	 * Met à jour la publication de l’instance locale suite à un refresh Spring
+	 * Cloud.
+	 */
+	@EventListener(RefreshScopeRefreshedEvent.class)
+	public void onRefresh() {
+		log.info("✅ RefreshScope détecté – re-publication de selfInstance");
+		registerSelf();
+	}
 
-                if (removedUuid.equals(uuidInMetadata)) {
-                    getRegistryMap().remove(entry.getKey());
-                    log.info("🧹 Instance orpheline supprimée : {}", entry.getKey());
-                    count++;
-                }
-            }
+	/**
+	 * Publie l’instance locale dans la registry Hazelcast.
+	 */
+	public void registerSelf() {
+		if (selfInstance == null)
+			return;
 
-            if (count == 0) {
-                log.info("ℹ️ Aucun ServiceDescriptor à nettoyer pour {}", removedUuid);
-            } else {
-                log.info("✅ {} instance(s) nettoyée(s) suite au départ du membre {}", count, removedUuid);
-            }
-        }
+		var descriptor = selfInstance.toServiceDescriptor();
 
-        @Override
-        public void memberAdded(MembershipEvent event) {
-            log.info("👋 Nouveau membre Hazelcast détecté : {}", event.getMember().getUuid());
-        }
+		String hazelcastUuid = hazelcast.getCluster().getLocalMember().getUuid().toString();
+		Map<String, String> enrichedMetadata = descriptor.getMetadata() != null
+				? new HashMap<>(descriptor.getMetadata())
+				: new HashMap<>();
+		enrichedMetadata.put(INTERNAL_KEY_HAZELCAST_UUID, hazelcastUuid);
+		descriptor.setMetadata(enrichedMetadata);
 
-        @Override
-        public void stateChanged(com.hazelcast.core.LifecycleEvent event) {
-            switch (event.getState()) {
-                case MERGED:
-                    log.info("🔄 Hazelcast MERGED – Réenregistrement dans la registry");
-                    registerSelf();
-                    break;
-                case STARTED:
-                    if (selfInstance != null) {
-                        log.info("🔄 Hazelcast STARTED – Re-publication post-redémarrage");
-                        registerSelf();
-                    } else {
-                        log.debug("🌀 Hazelcast STARTED ignoré – selfInstance encore null");
-                    }
-                    break;
-                default:
-                    log.debug("ℹ️ Changement d’état Hazelcast ignoré : {}", event.getState());
-            }
-        }
-    }
+		getRegistryMap().put(selfInstance.getInstanceId(), descriptor);
+		log.info("✅ Publication selfInstance avec UUID Hazelcast : {} → {}", hazelcastUuid,
+				descriptor.getInstanceId());
+	}
+
+	private class HazelcastClusterListener implements MembershipListener, com.hazelcast.core.LifecycleListener {
+
+		@Override
+		public void memberRemoved(MembershipEvent event) {
+			String removedUuid = event.getMember().getUuid().toString();
+			log.warn("⚠️ Membre Hazelcast supprimé : {}", removedUuid);
+
+			int count = 0;
+			for (Map.Entry<String, ServiceDescriptor> entry : getRegistryMap().entrySet()) {
+				ServiceDescriptor desc = entry.getValue();
+				String uuidInMetadata = Optional.ofNullable(desc.getMetadata())
+						.map(m -> m.get(INTERNAL_KEY_HAZELCAST_UUID)).orElse(null);
+
+				if (removedUuid.equals(uuidInMetadata)) {
+					getRegistryMap().remove(entry.getKey());
+					log.info("✅ Instance orpheline supprimée : {}", entry.getKey());
+					count++;
+				}
+			}
+
+			if (count == 0) {
+				log.info("✅ Aucun ServiceDescriptor à nettoyer pour {}", removedUuid);
+			} else {
+				log.info("✅ {} instance(s) nettoyée(s) suite au départ du membre {}", count, removedUuid);
+			}
+		}
+
+		@Override
+		public void memberAdded(MembershipEvent event) {
+			log.info("✅ Nouveau membre Hazelcast détecté : {}", event.getMember().getUuid());
+		}
+
+		@Override
+		public void stateChanged(com.hazelcast.core.LifecycleEvent event) {
+			switch (event.getState()) {
+			case MERGED:
+				log.info("✅ Hazelcast MERGED – Réenregistrement dans la registry");
+				registerSelf();
+				break;
+			case STARTED:
+				if (selfInstance != null) {
+					log.info("✅ Hazelcast STARTED – Re-publication post-redémarrage");
+					registerSelf();
+				} else {
+					log.debug("ℹ️ Hazelcast STARTED ignoré – selfInstance encore null");
+				}
+				break;
+			default:
+				log.debug("ℹ️ Changement d’état Hazelcast ignoré : {}", event.getState());
+			}
+		}
+	}
 
 }

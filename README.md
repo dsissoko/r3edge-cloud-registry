@@ -9,7 +9,7 @@ La lib repose sur **Hazelcast 5.5** (testée uniquement en mode embedded) et s�
 > ✅ Remplace **Ribbon** (load balancing côté client)  
 > ✅ **Zéro serveur externe** à déployer  
 > ✅ 100 % compatible **Spring Boot**  
-> ✅ Basé sur **Hazelcast** → haute disponibilité, résilience, distribution native  
+> ✅ **et en bonus : accès à toute la puissance de Hazelcast** *(tâches distribuées, haute dispo, cache partagé, etc.)*  
 > ✅ Intégration ultra simple : **juste une dépendance à ajouter**  
 > ✅ **Hot Reload** des données de registre (@RefreshScope + config server + bus refresh)
 
@@ -33,6 +33,8 @@ An auto-translated English version is available here:
     - ℹ️ `{base-path}` est configurable via `r3edge.registry.base-path` (par défaut : `/registry`) 
    
 - ✅ Intégration complète avec [Spring Flip](https://github.com/dsissoko/r3edge-spring-flip) pour la gestion des features dynamiques.
+- ✅ Toutes les fonctionnalités d’un cluster Hazelcast : [voir la documentation officielle](https://docs.hazelcast.com/hazelcast/5.5)
+
 
 ### ⚙️ Concepts
 
@@ -72,7 +74,14 @@ repositories {
 
 dependencies {
     ...
-    implementation "com.r3edge:r3edge-cloud-registry:0.1.5"
+    // Dépendance principale
+    implementation "com.r3edge:r3edge-cloud-registry:0.1.6""
+
+    // Obligatoire : support du cluster Hazelcast
+    implementation 'com.hazelcast:hazelcast-spring:5.4.0'
+
+    // Recommandé : pour activer Spring Boot et la configuration automatique
+    implementation 'org.springframework.boot:spring-boot-starter'
     ...
 }
 ```
