@@ -66,7 +66,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
 
     // Librairies exposées à l'utilisateur
-    api "com.r3edge:r3edge-spring-flip:0.1.1"
+    api "com.r3edge:r3edge-spring-flip:0.1.2"
     api 'org.springframework.cloud:spring-cloud-context'
     api 'org.springframework:spring-context'
     api 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
