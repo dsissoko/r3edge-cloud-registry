@@ -26,6 +26,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.YamlConfigBuilder;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.map.IMap;
 import com.hazelcast.spring.context.SpringManagedContext;
 import com.r3edge.springflip.FlipConfiguration;
@@ -152,14 +153,22 @@ public class HazelcastServiceRegistry implements ServiceRegistry {
 	 */
 	@PreDestroy
 	public void destroy() {
-		if (selfInstance != null) {
-			log.info("✅ Nettoyage selfInstance avant arrêt : {}", selfInstance.getInstanceId());
-			unregisterInstance(selfInstance.getInstanceId());
-		}
-		if (hazelcast != null) {
-			log.info("ℹ️ Arrêt Hazelcast instance '{}'", hazelcast.getName());
-			hazelcast.shutdown();
-		}
+	    if (hazelcast == null || !hazelcast.getLifecycleService().isRunning()) {
+	        log.warn("⚠️ Hazelcast déjà arrêté. Skip destruction logic.");
+	        return;
+	    }
+
+	    if (selfInstance != null) {
+	        try {
+	            log.info("✅ Nettoyage selfInstance avant arrêt : {}", selfInstance.getInstanceId());
+	            unregisterInstance(selfInstance.getInstanceId());
+	        } catch (HazelcastInstanceNotActiveException e) {
+	            log.warn("⚠️ Hazelcast instance inactive pendant unregisterInstance – skip", e);
+	        }
+	    }
+
+	    log.info("✅ Arrêt Hazelcast instance '{}'", hazelcast.getName());
+	    hazelcast.shutdown();
 	}
 
 	/**
