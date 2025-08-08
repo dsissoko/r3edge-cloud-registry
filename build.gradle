@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'com.r3edge'
-version = '0.1.6-SNAPSHOT'
+version = '0.1.7'
 
 base {
     archivesName = 'r3edge-cloud-registry'

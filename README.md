@@ -75,10 +75,10 @@ repositories {
 dependencies {
     ...
     // Dépendance principale
-    implementation "com.r3edge:r3edge-cloud-registry:0.1.6""
+    implementation "com.r3edge:r3edge-cloud-registry:0.1.7"
 
     // Obligatoire : support du cluster Hazelcast
-    implementation 'com.hazelcast:hazelcast-spring:5.4.0'
+    implementation 'com.hazelcast:hazelcast-spring:5.5.0'
 
     // Recommandé : pour activer Spring Boot et la configuration automatique
     implementation 'org.springframework.boot:spring-boot-starter'
