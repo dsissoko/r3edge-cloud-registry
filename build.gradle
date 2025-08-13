@@ -108,9 +108,9 @@ jacocoTestReport {
     }
 }
 
-springBoot {
-    buildInfo()
-}
+//springBoot {
+//    buildInfo()
+//}
 
 tasks.named("bootJar") {
     enabled = false
