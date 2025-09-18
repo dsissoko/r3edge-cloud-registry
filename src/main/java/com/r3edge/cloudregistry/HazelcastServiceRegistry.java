@@ -16,6 +16,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cloud.context.scope.refresh.RefreshScopeRefreshedEvent;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.Yaml;
 
@@ -64,6 +65,7 @@ public class HazelcastServiceRegistry implements ServiceRegistry {
 	private final ApplicationContext springContext;
 	private final ServiceRegistryProperties properties;
 	private final Optional<FlipConfiguration> flipConfiguration;
+	private final Environment environment;
 	@Getter
 	private boolean clientMode = false;
 	@Getter
@@ -95,6 +97,12 @@ public class HazelcastServiceRegistry implements ServiceRegistry {
 	public void init() {
 		try {
 			String yaml = properties.getHazelcastConfig();
+            if (yaml == null || yaml.isBlank()) {
+                throw new IllegalArgumentException("r3edge.registry.hazelcast-config manquant");
+            }
+
+            // >>> Résoudre les ${...} ici (y compris les valeurs par défaut)
+            yaml = environment.resolvePlaceholders(yaml);			
 			Yaml snake = new Yaml();
 			Map<String, Object> root = snake.load(yaml);
 			Object hazelcastNode = root;

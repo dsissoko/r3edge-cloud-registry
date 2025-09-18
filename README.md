@@ -75,7 +75,7 @@ repositories {
 dependencies {
     ...
     // Dépendance principale
-    implementation "com.r3edge:r3edge-cloud-registry:0.1.8"
+    implementation "com.r3edge:r3edge-cloud-registry:0.1.9"
 
     // Obligatoire : support du cluster Hazelcast
     implementation 'com.hazelcast:hazelcast-spring:5.5.0'
@@ -105,32 +105,30 @@ r3edge:
       external-base-url: http://10.0.0.1
       announced-ip: 10.0.0.1
     strategy: hazelcast
-    hazelcast-config: |
-      hazelcast:
-        instance-name: r3edge-registry
-        cluster-name: r3edge-cluster
-        network:
-          public-address: 10.0.0.1        
-          port:
-            port: 5701
-            auto-increment: true
-            port-count: 10
-          interfaces:
-            enabled: false
-          join:
-            auto-detection:
-              enabled: false         
-            multicast:
-              enabled: false          
-            tcp-ip:
-              enabled: true
-              member-list:
-                - 10.0.0.1
-                - 10.0.0.2
+        hazelcast-config: |
+          hazelcast:
+            instance-name: r3edge-registry
+            cluster-name: r3edge-cluster
+            network:
+              port:
+                port: ${HZ_PORT:5701}
+                auto-increment: true
+                port-count: 10
+              interfaces:
+                enabled: false
+              public-address: "${HZ_PUBLIC_ADDRESS:172.24.208.1}:${HZ_PORT:5701}"
+              join:
+                auto-detection:
+                  enabled: false
+                multicast:
+                  enabled: false
+                tcp-ip:
+                  enabled: true
+                  member-list: ${HZ_MEMBERS:[]}
 ```
 
 > ℹ️ Au démarrage, vos microservices vont constituer un cluster Hazelcast   
-> ℹ️ La configuration Hazelcast est native et lue à partir du champ hazelcast-config. Toutes les options sont donc disponibles en théorie  
+> ℹ️ La configuration Hazelcast est native et lue à partir du champ hazelcast-config. Toutes les options sont donc disponibles en théorie : les placeholders HZ_PORT, HZ_PUBLIC_ADDRESS, HZ_MEMBERS doivent être fournis en vairable d'environnement.
 > ℹ️ L'état du registre est rafraîchi grâce à un double mécanisme: celui d'Hazelcast (heartbeat des membres du cluster) et celui de spring cloud bus avec spring cloud server ce qui permet un hot reload très fiable des features des services ! 
 
 ### Localisez et effectuez vos appels inter-service:
