@@ -14,7 +14,7 @@ class HazelcastServiceRegistryRandomTest {
     // Classe factice pour accéder à pickRandomUrl
     static class TestableRegistry extends HazelcastServiceRegistry {
         TestableRegistry() {
-            super(null, null, null, null);
+            super(null, null, null);
         }
 
         public String testPickRandomUrl(Stream<ServiceDescriptor> stream, Function<ServiceDescriptor, String> extractor) {

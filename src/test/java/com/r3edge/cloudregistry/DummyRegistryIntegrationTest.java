@@ -52,14 +52,16 @@ public class DummyRegistryIntegrationTest {
 
     @Test
     void registry_should_return_features_mapping() {
-        Map<String, List<ServiceDescriptor>> features = rest.getForObject("http://localhost:" + port + "/registry/features", Map.class);
+        @SuppressWarnings("unchecked")
+		Map<String, List<ServiceDescriptor>> features = rest.getForObject("http://localhost:" + port + "/registry/features", Map.class);
         assertNotNull(features);
         assertTrue(features.size() >= 0); // Peut être vide si aucune feature activée
     }
 
     @Test
     void registry_should_return_services_mapping() {
-        Map<String, List<ServiceDescriptor>> services = rest.getForObject("http://localhost:" + port + "/registry/instances", Map.class);
+        @SuppressWarnings("unchecked")
+		Map<String, List<ServiceDescriptor>> services = rest.getForObject("http://localhost:" + port + "/registry/instances", Map.class);
         assertNotNull(services);
         assertTrue(services.containsKey("registry-api"));
         assertThat(services.get("registry-api")).isNotEmpty();

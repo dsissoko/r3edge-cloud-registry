@@ -75,7 +75,7 @@ repositories {
 dependencies {
     ...
     // Dépendance principale
-    implementation "com.r3edge:r3edge-cloud-registry:0.1.9"
+    implementation "com.r3edge:r3edge-cloud-registry:0.2.0"
 
     // Obligatoire : support du cluster Hazelcast
     implementation 'com.hazelcast:hazelcast-spring:5.5.0'
@@ -128,7 +128,8 @@ r3edge:
 ```
 
 > ℹ️ Au démarrage, vos microservices vont constituer un cluster Hazelcast   
-> ℹ️ La configuration Hazelcast est native et lue à partir du champ hazelcast-config. Toutes les options sont donc disponibles en théorie : les placeholders HZ_PORT, HZ_PUBLIC_ADDRESS, HZ_MEMBERS doivent être fournis en vairable d'environnement.
+> ℹ️ La configuration Hazelcast est native et lue à partir du champ hazelcast-config.  
+> ℹ️ Toutes les options sont donc disponibles en théorie : Spring boot peux résoudre tous les placeholders de votre choix. Dans l'exemple ci-dessus, HZ_PORT, HZ_PUBLIC_ADDRESS, HZ_MEMBERS doivent être fournis en variable d'environnement, si non fournis, les valeurs par défaut seront utilisées.  
 > ℹ️ L'état du registre est rafraîchi grâce à un double mécanisme: celui d'Hazelcast (heartbeat des membres du cluster) et celui de spring cloud bus avec spring cloud server ce qui permet un hot reload très fiable des features des services ! 
 
 ### Localisez et effectuez vos appels inter-service:
