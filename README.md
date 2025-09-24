@@ -129,7 +129,7 @@ r3edge:
 
 > ℹ️ Au démarrage, vos microservices vont constituer un cluster Hazelcast   
 > ℹ️ La configuration Hazelcast est native et lue à partir du champ hazelcast-config.  
-> ℹ️ Toutes les options sont donc disponibles en théorie : Spring boot peux résoudre tous les placeholders de votre choix. Dans l'exemple ci-dessus, HZ_PORT, HZ_PUBLIC_ADDRESS, HZ_MEMBERS doivent être fournis en variable d'environnement, si non fournis, les valeurs par défaut seront utilisées.  
+> ℹ️ Toutes les options sont donc disponibles en théorie : Spring boot peux résoudre tous les placeholders de votre choix. Dans l'exemple ci-dessus, HZ_PORT, HZ_PUBLIC_ADDRESS, HZ_MEMBERS doivent être fournis en variable d'environnement, si non fournis, les valeurs par défaut seront utilisées. La configuration d'Hazelcast permet de nombreuses possibilités, vous pouvez consulter le complément suivant: [Configuration d'Hazelcast: Tips & Tricks](HZ_CONFIG.md)  
 > ℹ️ L'état du registre est rafraîchi grâce à un double mécanisme: celui d'Hazelcast (heartbeat des membres du cluster) et celui de spring cloud bus avec spring cloud server ce qui permet un hot reload très fiable des features des services ! 
 
 ### Localisez et effectuez vos appels inter-service:
