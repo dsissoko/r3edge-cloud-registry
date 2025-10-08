@@ -34,6 +34,7 @@ An auto-translated English version is available here:
    
 - ✅ Intégration complète avec [Spring Flip](https://github.com/dsissoko/r3edge-spring-flip) pour la gestion des features dynamiques.
 - ✅ Toutes les fonctionnalités d’un cluster Hazelcast : [voir la documentation officielle](https://docs.hazelcast.com/hazelcast/5.5)
+- ✅ Une abstration pour gérer un cache distribué (voir CacheGateway)
 
 
 ### ⚙️ Concepts
@@ -75,7 +76,7 @@ repositories {
 dependencies {
     ...
     // Dépendance principale
-    implementation "com.r3edge:r3edge-cloud-registry:0.2.0"
+    implementation "com.r3edge:r3edge-cloud-registry:0.2.1"
 
     // Obligatoire : support du cluster Hazelcast
     implementation 'com.hazelcast:hazelcast-spring:5.5.0'
