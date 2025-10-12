@@ -76,7 +76,7 @@ repositories {
 dependencies {
     ...
     // Dépendance principale
-    implementation "com.r3edge:r3edge-cloud-registry:0.2.1"
+    implementation "com.r3edge:r3edge-cloud-registry:0.2.2"
 
     // Obligatoire : support du cluster Hazelcast
     implementation 'com.hazelcast:hazelcast-spring:5.5.0'

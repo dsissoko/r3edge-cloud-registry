@@ -93,6 +93,7 @@ public class HazelcastServiceRegistry implements ServiceRegistry {
 	 */
 	@PostConstruct
 	public void init() {
+		logHazelcastDiagnostics();
 		try {
 			String yaml = properties.getHazelcastConfig();
             if (yaml == null || yaml.isBlank()) {
@@ -441,4 +442,32 @@ public class HazelcastServiceRegistry implements ServiceRegistry {
 			}
 		}
 	}
+	
+	private void logHazelcastDiagnostics() {
+	    try {
+	        // 1) Version réellement chargée
+	        String hzVer = com.hazelcast.instance.BuildInfoProvider.getBuildInfo().getVersion();
+	        log.debug("HZ diag · BuildInfo version = {}", hzVer);
+
+	        // 2) D’où provient la classe Hazelcast ?
+	        var loc = com.hazelcast.core.Hazelcast.class
+	                .getProtectionDomain().getCodeSource().getLocation();
+	        log.debug("HZ diag · Hazelcast loaded from = {}", loc);
+
+	        // 3) Duplicates potentiels pour Versions.class
+	        var cl = Thread.currentThread().getContextClassLoader();
+	        var urls = cl.getResources("com/hazelcast/internal/cluster/Versions.class");
+	        int count = 0;
+	        while (urls.hasMoreElements()) {
+	            log.warn("HZ diag · Versions.class found at = {}", urls.nextElement());
+	            count++;
+	        }
+	        if (count > 1) {
+	            log.error("HZ diag · Multiple Versions.class detected on classpath ({}).", count);
+	        }
+	    } catch (Exception e) {
+	        log.warn("HZ diag · unable to run diagnostics cleanly", e);
+	    }
+	}
+
 }
